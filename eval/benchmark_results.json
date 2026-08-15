@@ -1,0 +1,41 @@
+[
+  {
+    "strategy": "fixed",
+    "total_queries": 4,
+    "total_indexed_chunks": 5,
+    "recall_at_1": "100.0%",
+    "recall_at_5": "100.0%",
+    "recall_at_10": "100.0%",
+    "avg_retrieval_latency_ms": "30.44 ms",
+    "r1_val": 100.0,
+    "r5_val": 100.0,
+    "r10_val": 100.0,
+    "avg_lat_val": 30.44
+  },
+  {
+    "strategy": "semantic",
+    "total_queries": 4,
+    "total_indexed_chunks": 5,
+    "recall_at_1": "100.0%",
+    "recall_at_5": "100.0%",
+    "recall_at_10": "100.0%",
+    "avg_retrieval_latency_ms": "18.87 ms",
+    "r1_val": 100.0,
+    "r5_val": 100.0,
+    "r10_val": 100.0,
+    "avg_lat_val": 18.87
+  },
+  {
+    "strategy": "metadata_aware",
+    "total_queries": 4,
+    "total_indexed_chunks": 5,
+    "recall_at_1": "100.0%",
+    "recall_at_5": "100.0%",
+    "recall_at_10": "100.0%",
+    "avg_retrieval_latency_ms": "21.02 ms",
+    "r1_val": 100.0,
+    "r5_val": 100.0,
+    "r10_val": 100.0,
+    "avg_lat_val": 21.02
+  }
+]

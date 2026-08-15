@@ -1,0 +1,59 @@
+{
+  "dataset_name": "ai4bharat/MSMARCO-XI",
+  "sample_count": 4,
+  "samples": [
+    {
+      "query_id": "hi_101",
+      "query": "भारत का राष्ट्रीय फूल कौन सा है?",
+      "passages": [
+        {
+          "passage_id": "p_hi_101_1",
+          "passage_text": "भारत का राष्ट्रीय फूल कमल (Lotus) है। यह पवित्रता, उर्वरता और सुंदरता का प्रतीक माना जाता है।",
+          "is_selected": 1
+        },
+        {
+          "passage_id": "p_hi_101_2",
+          "passage_text": "गुलाब को फूलों का राजा माना जाता है, परंतु भारत का राष्ट्रीय फूल कमल ही है।",
+          "is_selected": 0
+        }
+      ],
+      "language": "hi"
+    },
+    {
+      "query_id": "hi_102",
+      "query": "गोवा की राजधानी क्या है?",
+      "passages": [
+        {
+          "passage_id": "p_hi_102_1",
+          "passage_text": "गोवा की राजधानी पणजी (Panaji) है, जो मांडवी नदी के तट पर स्थित है।",
+          "is_selected": 1
+        }
+      ],
+      "language": "hi"
+    },
+    {
+      "query_id": "en_201",
+      "query": "What is the capital of Goa?",
+      "passages": [
+        {
+          "passage_id": "p_en_201_1",
+          "passage_text": "Panaji is the capital of the Indian state of Goa and the headquarters of North Goa district.",
+          "is_selected": 1
+        }
+      ],
+      "language": "en"
+    },
+    {
+      "query_id": "hi_103",
+      "query": "कृत्रिम बुद्धिमत्ता (AI) क्या है?",
+      "passages": [
+        {
+          "passage_id": "p_hi_103_1",
+          "passage_text": "कृत्रिम बुद्धिमत्ता (Artificial Intelligence) कंप्यूटर विज्ञान की वह शाखा है जो मशीनों को मानव बुद्धिमत्ता की तरह सोचने और सीखने की क्षमता प्रदान करती है।",
+          "is_selected": 1
+        }
+      ],
+      "language": "hi"
+    }
+  ]
+}
