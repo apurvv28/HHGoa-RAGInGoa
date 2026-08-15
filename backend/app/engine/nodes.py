@@ -111,12 +111,15 @@ async def node_generate(state: RAGGraphState) -> RAGGraphState:
     query = state.get("query_text", "")
     is_in_domain = state.get("is_in_domain", True)
     relevant_chunks = state.get("relevant_chunks", [])
+    raw_chunks = state.get("raw_chunks", [])
 
-    if not is_in_domain or not relevant_chunks:
+    chunks_to_use = relevant_chunks if relevant_chunks else raw_chunks
+
+    if not is_in_domain or not chunks_to_use:
         answer = generate_refusal_answer("OUT_OF_CORPUS", language=lang)
         gen_ms = 0.0
     else:
-        answer, gen_ms = await llm_service.generate_response(query, relevant_chunks, language=lang)
+        answer, gen_ms = await llm_service.generate_response(query, chunks_to_use, language=lang)
 
     latency = state.get("latency", {})
     latency["generation_ms"] = round(gen_ms, 2)

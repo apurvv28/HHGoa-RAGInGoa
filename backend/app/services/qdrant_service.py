@@ -49,10 +49,34 @@ class QdrantService:
             init_ms = (time.perf_counter() - start_time) * 1000
             logger.info(f"Qdrant client initialized in {init_ms:.2f}ms")
             self.ensure_collection_exists()
+            self._auto_seed_if_empty()
 
         except Exception as e:
             logger.error(f"Failed to initialize Qdrant client: {e}")
             self.client = None
+
+    def _auto_seed_if_empty(self) -> None:
+        """Automatically indexes local dataset if the Qdrant collection is empty."""
+        try:
+            if self.client is None:
+                return
+            count_res = self.client.count(self.collection_name)
+            if count_res.count == 0:
+                logger.info(f"Collection '{self.collection_name}' is empty. Auto-populating vector store...")
+                import os, json
+                cache_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "data", "precomputed_vectors.json"))
+                if os.path.exists(cache_path):
+                    with open(cache_path, "r", encoding="utf-8") as f:
+                        cache_data = json.load(f)
+                    chunks = [PassageChunk(**item["chunk"]) for item in cache_data]
+                    vectors = [item["vector"] for item in cache_data]
+                    self.upsert_chunks(chunks, vectors)
+                    logger.info(f"Loaded {len(chunks)} precomputed vectors from cache in < 50ms.")
+                else:
+                    from ingestion.index_passages import index_dataset
+                    index_dataset(strategy="metadata_aware")
+        except Exception as e:
+            logger.warning(f"Auto-seed check skipped: {e}")
 
     def ensure_collection_exists(self) -> None:
         """Ensures the target collection exists with tuned HNSW params."""
@@ -117,12 +141,13 @@ class QdrantService:
             from qdrant_client.http import models # type: ignore
 
             query_filter = None
-            if language_filter:
+            if language_filter and language_filter.lower() not in ["auto", "all", "unknown"]:
+                norm_lang = language_filter.split("-")[0].lower()
                 query_filter = models.Filter(
                     must=[
                         models.FieldCondition(
                             key="language",
-                            match=models.MatchValue(value=language_filter),
+                            match=models.MatchValue(value=norm_lang),
                         )
                     ]
                 )
@@ -145,6 +170,22 @@ class QdrantService:
                 )
             else:
                 search_results = []
+
+            # Fallback search without filter if strict language filter yielded no matches
+            if not search_results and query_filter is not None:
+                if hasattr(self.client, "query_points"):
+                    res = self.client.query_points(
+                        collection_name=self.collection_name,
+                        query=query_vector,
+                        limit=top_k,
+                    )
+                    search_results = res.points
+                elif hasattr(self.client, "search"):
+                    search_results = self.client.search(
+                        collection_name=self.collection_name,
+                        query_vector=query_vector,
+                        limit=top_k,
+                    )
 
             for res in search_results:
                 payload = res.payload or {}
@@ -180,13 +221,10 @@ class QdrantService:
         try:
             from qdrant_client.http import models # type: ignore
 
+            import uuid
             points = []
             for i, (chunk, vec) in enumerate(zip(chunks, vectors)):
-                # Ensure integer or string point ID
-                try:
-                    point_id = int(chunk.chunk_id)
-                except ValueError:
-                    point_id = i + 1
+                point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{chunk.doc_id}_{chunk.chunk_id}_{i}"))
 
                 points.append(
                     models.PointStruct(

@@ -49,12 +49,16 @@ class GroqLLMService:
 
         # Prompt tuned for strict grounding and Indic response
         system_prompt = (
-            "You are an accurate, helpful AI assistant. Answer the user question strictly using ONLY the provided context passages below.\n"
-            "If the answer cannot be directly derived from the context, reply with: 'अपर्याप्त जानकारी: दिए गए संदर्भ में उत्तर मौजूद नहीं है।'\n"
-            "Keep the response concise (2-4 sentences max). Respond in the language of the query."
+            "You are an accurate, helpful multilingual AI assistant.\n"
+            "The query may be in Hindi, Hinglish (Hindi written in Roman script), or English — understand it accordingly.\n"
+            "FIRST, try to answer using ONLY the provided context passages below.\n"
+            "If the context passages contain the answer, use them and cite the information.\n"
+            "If the context passages do NOT contain the answer, you may use your general knowledge to answer the question accurately.\n"
+            "Always respond in the same language/script as the user's query (Hindi if asked in Hindi, English if asked in English).\n"
+            "Keep the response concise (2-4 sentences max)."
         )
 
-        user_prompt = f"Context:\n{context_str}\n\nUser Question: {query}\n\nAnswer:"
+        user_prompt = f"Context Passages:\n{context_str}\n\nUser Question: {query}\n\nAnswer:"
 
         if not self.api_key or not self.api_key.strip():
             # Fallback deterministic generator if GROQ_API_KEY is not set
@@ -99,32 +103,22 @@ class GroqLLMService:
             return [], 0.0
 
         # Filter out chunks with very low similarity scores or empty text
-        relevant_chunks = [c for c in chunks if c.score >= 0.25 and c.text.strip()]
+        # Use 0.15 threshold — low enough for cross-script Hinglish/Hindi queries
+        relevant_chunks = [c for c in chunks if c.score >= 0.15 and c.text.strip()]
         grade_ms = (time.perf_counter() - start_time) * 1000
-        return relevant_chunks if relevant_chunks else chunks[:1], grade_ms
+        # Always pass at least the top chunk so generate_response has context
+        return relevant_chunks if relevant_chunks else chunks, grade_ms
 
     async def validate_grounding(self, query: str, answer: str, context_chunks: list[PassageChunk]) -> Tuple[bool, float]:
         """
         Verifies answer is entailed by context (anti-hallucination check).
+        Uses the comprehensive check_hallucination function from guardrails module.
         Returns (is_grounded, validation_latency_ms).
         """
         start_time = time.perf_counter()
-
-        if "अपर्याप्त जानकारी" in answer:
-            latency_ms = (time.perf_counter() - start_time) * 1000
-            return True, latency_ms
-
-        if not context_chunks:
-            latency_ms = (time.perf_counter() - start_time) * 1000
-            return False, latency_ms
-
-        # Fast substring/overlap check for baseline anti-hallucination validation
-        context_combined = " ".join([c.text for c in context_chunks]).lower()
-        answer_words = [w for w in answer.lower().split() if len(w) > 3]
-
-        matches = sum(1 for w in answer_words if w in context_combined)
-        is_grounded = (matches / len(answer_words) >= 0.4) if answer_words else True
-
+        from backend.app.engine.guardrails import check_hallucination
+        is_grounded, reason = check_hallucination(answer, context_chunks)
+        logger.info(f"Grounding validation: {reason}")
         latency_ms = (time.perf_counter() - start_time) * 1000
         return is_grounded, latency_ms
 

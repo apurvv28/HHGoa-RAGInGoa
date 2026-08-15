@@ -30,16 +30,26 @@ def load_dataset_file() -> tuple[str, list[dict]]:
     full_path = os.path.join(DATA_DIR, "msmarco_xi_dataset.json")
     sample_path = os.path.join(DATA_DIR, "sample_msmarco.json")
 
-    target_path = full_path if os.path.exists(full_path) else sample_path
+    records = []
+    target_path = full_path
 
-    if not os.path.exists(target_path):
-        raise FileNotFoundError(f"Neither {full_path} nor {sample_path} exists.")
+    if os.path.exists(full_path):
+        with open(full_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        records = data.get("records") or data.get("samples") or []
 
-    logger.info(f"Loading dataset file from {target_path}...")
-    with open(target_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
+    # If msmarco_xi_dataset.json is empty or missing, fallback to sample_msmarco.json
+    if not records and os.path.exists(sample_path):
+        logger.info(f"msmarco_xi_dataset.json empty or missing. Falling back to {sample_path}...")
+        target_path = sample_path
+        with open(sample_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        records = data.get("records") or data.get("samples") or []
 
-    records = data.get("records") or data.get("samples") or []
+    if not records:
+        raise FileNotFoundError(f"Neither {full_path} nor {sample_path} contains records.")
+
+    logger.info(f"Loaded {len(records)} records from {target_path}.")
     return target_path, records
 
 
@@ -103,6 +113,22 @@ def index_dataset(
 
     # 4. Bulk upsert to Qdrant
     upsert_success = qdrant_service.upsert_chunks(all_chunks, vectors)
+
+    # Save to disk cache for instantaneous auto-seed startup (< 50ms)
+    try:
+        cache_path = os.path.join(DATA_DIR, "precomputed_vectors.json")
+        cache_payload = [
+            {
+                "chunk": chunk.model_dump(),
+                "vector": vec
+            }
+            for chunk, vec in zip(all_chunks, vectors)
+        ]
+        with open(cache_path, "w", encoding="utf-8") as f:
+            json.dump(cache_payload, f, ensure_ascii=False)
+        logger.info(f"Saved {len(cache_payload)} precomputed vectors to {cache_path}")
+    except Exception as e:
+        logger.warning(f"Could not save vector cache: {e}")
 
     total_indexing_ms = (time.perf_counter() - start_time) * 1000
 

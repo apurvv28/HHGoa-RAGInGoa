@@ -27,7 +27,7 @@ interface Guardrail {
   is_in_domain: boolean;
   is_grounded: boolean;
   confidence_score: number;
-  reasoning: str;
+  reasoning: string;
 }
 
 interface QueryResponse {
@@ -52,15 +52,17 @@ export default function VoiceRAGPage() {
   // Handle Text Query Submission
   const handleTextSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!queryText.trim() || loading) return;
+    const trimmed = queryText.trim();
+    if (!trimmed || loading) return;
 
     setLoading(true);
+    setQueryText(''); // clear input immediately so placeholder shows
     try {
       const res = await fetch(`${BACKEND_URL}/api/v1/query`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          query_text: queryText,
+          query_text: trimmed,
           language: language.startsWith('hi') ? 'hi' : 'en',
           top_k: 5
         })
@@ -78,7 +80,15 @@ export default function VoiceRAGPage() {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorderRef.current = new MediaRecorder(stream);
+      
+      let options = {};
+      if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported('audio/webm')) {
+        options = { mimeType: 'audio/webm' };
+      } else if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported('audio/mp4')) {
+        options = { mimeType: 'audio/mp4' };
+      }
+
+      mediaRecorderRef.current = new MediaRecorder(stream, options);
       audioChunksRef.current = [];
 
       mediaRecorderRef.current.ondataavailable = (event) => {
@@ -88,11 +98,13 @@ export default function VoiceRAGPage() {
       };
 
       mediaRecorderRef.current.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-        await sendAudioToBackend(audioBlob);
+        const mimeType = mediaRecorderRef.current?.mimeType || 'audio/webm';
+        const ext = mimeType.includes('webm') ? 'webm' : 'wav';
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        await sendAudioToBackend(audioBlob, ext);
       };
 
-      mediaRecorderRef.current.start();
+      mediaRecorderRef.current.start(250);
       setIsRecording(true);
     } catch (err) {
       alert('Microphone permission denied or not available.');
@@ -106,11 +118,11 @@ export default function VoiceRAGPage() {
     }
   };
 
-  const sendAudioToBackend = async (blob: Blob) => {
+  const sendAudioToBackend = async (blob: Blob, ext: string = 'webm') => {
     setLoading(true);
     try {
       const formData = new FormData();
-      formData.append('file', blob, 'recording.wav');
+      formData.append('file', blob, `recording.${ext}`);
       formData.append('language', language);
       formData.append('synthesize_voice', 'true');
 
@@ -197,7 +209,7 @@ export default function VoiceRAGPage() {
                 type="text"
                 value={queryText}
                 onChange={(e) => setQueryText(e.target.value)}
-                placeholder="उदा: भारत की राजधानी क्या है?"
+                placeholder={language.startsWith('hi') ? 'अपना प्रश्न यहाँ टाइप करें...' : 'Type your question here...'}
                 style={{
                   flex: 1,
                   background: 'rgba(255, 255, 255, 0.05)',
@@ -212,23 +224,38 @@ export default function VoiceRAGPage() {
               <button
                 id="submit-query-btn"
                 type="submit"
-                disabled={loading}
+                disabled={loading || !queryText.trim()}
                 style={{
-                  background: 'linear-gradient(135deg, var(--primary-cyan), var(--primary-blue))',
+                  background: queryText.trim()
+                    ? 'linear-gradient(135deg, var(--primary-cyan), var(--primary-blue))'
+                    : 'rgba(255,255,255,0.1)',
                   border: 'none',
                   borderRadius: '10px',
                   padding: '0 20px',
-                  color: '#000',
+                  color: queryText.trim() ? '#000' : '#666',
                   fontWeight: 700,
-                  cursor: 'pointer',
+                  cursor: queryText.trim() ? 'pointer' : 'not-allowed',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px'
+                  gap: '6px',
+                  transition: 'all 0.2s'
                 }}
               >
-                <Send size={18} /> {loading ? '...' : 'Search'}
+                <Send size={18} /> {loading ? 'Processing...' : 'Search'}
               </button>
             </div>
+            {response && (
+              <p style={{ marginTop: '8px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                Last query: <span style={{ color: 'var(--primary-cyan)' }}>&ldquo;{response.query}&rdquo;</span>
+                <button
+                  type="button"
+                  onClick={() => setResponse(null)}
+                  style={{ marginLeft: '10px', color: '#ff6b6b', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                >
+                  ✕ Clear results
+                </button>
+              </p>
+            )}
           </form>
         </section>
 
@@ -253,7 +280,7 @@ export default function VoiceRAGPage() {
                   <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Retrieval Leg Target</span>
                   <p className="font-mono" style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--accent-green)' }}>
                     {response.latency.retrieval_leg_ms} ms
-                    <span style={{ fontSize: '0.7rem', marginLeft: '6px', color: '#888' }}>(<100ms)</span>
+                    <span style={{ fontSize: '0.7rem', marginLeft: '6px', color: '#888' }}>( {'<100ms'} )</span>
                   </p>
                 </div>
 
