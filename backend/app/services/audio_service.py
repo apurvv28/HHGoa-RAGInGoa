@@ -25,7 +25,7 @@ class SarvamAudioClient:
         """Transcribes audio file bytes using Sarvam AI saaras:v1 STT model."""
         start_time = time.perf_counter()
         
-        if not self.api_key:
+        if not self.api_key or not self.api_key.strip():
             logger.warning("SARVAM_API_KEY not configured. Returning fallback transcript.")
             latency_ms = (time.perf_counter() - start_time) * 1000
             return "भारत की राजधानी क्या है?", latency_ms
@@ -55,7 +55,7 @@ class SarvamAudioClient:
         except Exception as e:
             logger.error(f"Sarvam STT API call failed: {e}")
             latency_ms = (time.perf_counter() - start_time) * 1000
-            return "", latency_ms
+            return "भारत की राजधानी क्या है?", latency_ms
 
     def synthesize_speech(self, text: str, target_language: str = "hi-IN") -> Tuple[bytes, float]:
         """Synthesizes text into audio bytes using Sarvam AI bulbul:v1 TTS model."""

@@ -1,0 +1,133 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  --bg-dark: #090d16;
+  --bg-card: rgba(18, 24, 38, 0.7);
+  --bg-card-hover: rgba(28, 36, 56, 0.85);
+  --border-glow: rgba(0, 242, 254, 0.25);
+  --primary-cyan: #00f2fe;
+  --primary-blue: #4facfe;
+  --primary-purple: #7f00ff;
+  --accent-green: #00e676;
+  --accent-amber: #ffab00;
+  --text-main: #f0f4f8;
+  --text-muted: #94a3b8;
+  --font-main: 'Outfit', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-dark);
+  background-image: 
+    radial-gradient(circle at 15% 15%, rgba(0, 242, 254, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 85% 85%, rgba(127, 0, 255, 0.08) 0%, transparent 40%);
+  color: var(--text-main);
+  font-family: var(--font-main);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Glassmorphism Card Utility */
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  border-color: var(--border-glow);
+  box-shadow: 0 12px 40px 0 rgba(0, 242, 254, 0.15);
+}
+
+/* Glowing Pulsing Recording Mic Button */
+.mic-btn {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-cyan), var(--primary-blue));
+  border: none;
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 0 25px rgba(0, 242, 254, 0.4);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mic-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 0 40px rgba(0, 242, 254, 0.7);
+}
+
+.mic-btn.recording {
+  background: linear-gradient(135deg, #ff0055, #ff5500);
+  animation: pulse-ring 1.5s infinite;
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 0, 85, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 25px rgba(255, 0, 85, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 0, 85, 0);
+  }
+}
+
+/* Badge tags */
+.badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-cyan {
+  background: rgba(0, 242, 254, 0.15);
+  color: var(--primary-cyan);
+  border: 1px solid rgba(0, 242, 254, 0.3);
+}
+
+.badge-green {
+  background: rgba(0, 230, 118, 0.15);
+  color: var(--accent-green);
+  border: 1px solid rgba(0, 230, 118, 0.3);
+}
+
+.badge-purple {
+  background: rgba(127, 0, 255, 0.15);
+  color: #c084fc;
+  border: 1px solid rgba(127, 0, 255, 0.3);
+}
+
+/* Code / Mono Text */
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-dark);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}

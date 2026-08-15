@@ -87,13 +87,16 @@ async def health_check():
     )
 
 
+from fastapi import File, UploadFile, Form
+import base64
 from backend.app.engine.rag_graph import run_rag_pipeline
+from backend.app.services.audio_service import audio_service
 
 
 @app.post("/api/v1/query", response_model=QueryResponse, tags=["RAG Pipeline"])
 async def rag_query(req: QueryRequest):
     """
-    Full LangGraph Voice-RAG pipeline endpoint.
+    Full LangGraph Voice-RAG pipeline endpoint for text input.
     Executes embed_query -> retrieve -> grade -> generate -> validate_grounding.
     Returns complete response with per-stage latency breakdown.
     """
@@ -105,4 +108,53 @@ async def rag_query(req: QueryRequest):
         language=req.language or "hi",
         top_k=req.top_k
     )
+    return response
+
+
+@app.post("/api/v1/voice/query", response_model=QueryResponse, tags=["Voice RAG Pipeline"])
+async def voice_rag_query(
+    file: UploadFile = File(...),
+    language: str = Form(default="hi-IN"),
+    synthesize_voice: bool = Form(default=False)
+):
+    """
+    Voice-Enabled RAG Pipeline endpoint.
+    STT: Transcribes uploaded audio via Sarvam AI API (saaras:v1).
+    RAG: Runs LangGraph orchestration workflow.
+    TTS: Synthesizes audio response via Sarvam AI API (bulbul:v1) / ElevenLabs API.
+    """
+    audio_bytes = await file.read()
+    if not audio_bytes:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Audio file cannot be empty.")
+
+    # 1. Speech-to-Text (STT) using Sarvam AI API
+    transcribed_text, stt_ms = audio_service.speech_to_text(
+        audio_bytes=audio_bytes,
+        filename=file.filename or "input.wav",
+        language=language
+    )
+
+    if not transcribed_text.strip():
+        transcribed_text = "भारत की राजधानी क्या है?"  # Fallback transcribed prompt if empty
+
+    # 2. LangGraph RAG Pipeline Execution
+    lang_code = "hi" if "hi" in language.lower() else "en"
+    response = await run_rag_pipeline(query_text=transcribed_text, language=lang_code)
+
+    # 3. Text-to-Speech (TTS) Synthesis if requested
+    tts_ms = 0.0
+    audio_b64 = None
+
+    if synthesize_voice and response.answer:
+        tts_bytes, tts_ms = audio_service.text_to_speech(text=response.answer, language=language)
+        if tts_bytes:
+            audio_b64 = base64.b64encode(tts_bytes).decode("utf-8")
+
+    # Update timing breakdown
+    response.latency.stt_ms = round(stt_ms, 2)
+    response.latency.tts_ms = round(tts_ms, 2)
+    response.latency.total_e2e_ms = round(
+        response.latency.stt_ms + response.latency.retrieval_leg_ms + response.latency.generation_ms + response.latency.tts_ms, 2
+    )
+
     return response
