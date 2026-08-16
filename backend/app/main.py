@@ -24,23 +24,24 @@ logging.basicConfig(level=getattr(logging, settings.LOG_LEVEL.upper(), logging.I
 logger = logging.getLogger("main")
 
 
+async def background_warmup():
+    """Background task to warm up embedding model and vector store without blocking health checks."""
+    try:
+        logger.info("Starting background warmup of embedding model & Qdrant...")
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, embedding_service.load_model)
+        await loop.run_in_executor(None, qdrant_service.initialize_client)
+        logger.info("Background model & Qdrant warmup completed successfully!")
+    except Exception as e:
+        logger.error(f"Background warmup error: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Lifespan context manager for warm startup of models and database connections."""
-    logger.info("Initializing application services...")
-    start_time = time.perf_counter()
-
-    # Preload Indic embedding model in memory
-    embedding_service.load_model()
-
-    # Initialize Qdrant client connection
-    qdrant_service.initialize_client()
-
-    startup_ms = (time.perf_counter() - start_time) * 1000
-    logger.info(f"Application services initialized successfully in {startup_ms:.2f}ms")
-
+    """Lifespan context manager — yields immediately so ALB health checks pass in 0ms."""
+    logger.info("Starting FastAPI application...")
+    asyncio.create_task(background_warmup())
     yield
-
     logger.info("Shutting down application services...")
 
 

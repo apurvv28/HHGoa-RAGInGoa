@@ -65,6 +65,9 @@ else
     pip install --no-cache-dir fastapi uvicorn pydantic pydantic-settings httpx sentence-transformers qdrant-client sarvamai
 fi
 
+echo "Pre-downloading HuggingFace Indic embedding model weights..."
+python3 -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('intfloat/multilingual-e5-small')" || true
+
 echo "[5/7] Writing Production .env Environment File..."
 K1="gsk_u8pxzEqhFq1"
 K2="BFahf7L5MWGdyb3FY"
