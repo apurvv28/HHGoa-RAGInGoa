@@ -71,7 +71,7 @@ else
     echo "   - Existing ALB Security Group found: $ALB_SG_ID"
 fi
 
-# 3. Create EC2 Target Security Group (Port 8000 allowed ONLY from ALB SG)
+# 3. Create EC2 Target Security Group (Port 8000 allowed from ALB SG & 0.0.0.0/0)
 echo "[3/7] Provisioning EC2 Target Security Group ($EC2_SG_NAME)..."
 EC2_SG_ID=$(aws ec2 describe-security-groups --filters "Name=group-name,Values=$EC2_SG_NAME" "Name=vpc-id,Values=$VPC_ID" --query "SecurityGroups[0].GroupId" --output text 2>/dev/null || true)
 
@@ -83,15 +83,19 @@ if [ "$EC2_SG_ID" == "None" ] || [ -z "$EC2_SG_ID" ]; then
         --query "GroupId" --output text)
 
     # Inbound Port 8000 from ALB Security Group
-    aws ec2 authorize-security-group-ingress --group-id "$EC2_SG_ID" --protocol tcp --port 8000 --source-group "$ALB_SG_ID" > /dev/null
+    aws ec2 authorize-security-group-ingress --group-id "$EC2_SG_ID" --protocol tcp --port 8000 --source-group "$ALB_SG_ID" > /dev/null 2>&1 || true
+    # Inbound Port 8000 from 0.0.0.0/0 for health checks
+    aws ec2 authorize-security-group-ingress --group-id "$EC2_SG_ID" --protocol tcp --port 8000 --cidr 0.0.0.0/0 > /dev/null 2>&1 || true
     # Inbound SSH Port 22 for administration
-    aws ec2 authorize-security-group-ingress --group-id "$EC2_SG_ID" --protocol tcp --port 22 --cidr 0.0.0.0/0 > /dev/null
+    aws ec2 authorize-security-group-ingress --group-id "$EC2_SG_ID" --protocol tcp --port 22 --cidr 0.0.0.0/0 > /dev/null 2>&1 || true
     echo "   - Created EC2 Security Group: $EC2_SG_ID"
 else
     echo "   - Existing EC2 Security Group found: $EC2_SG_ID"
+    # Ensure Port 8000 ingress is authorized
+    aws ec2 authorize-security-group-ingress --group-id "$EC2_SG_ID" --protocol tcp --port 8000 --cidr 0.0.0.0/0 > /dev/null 2>&1 || true
 fi
 
-# 4. Create Target Group (Port 8000, /health check)
+# 4. Create Target Group (Port 8000, /health check with 200 matcher)
 echo "[4/7] Provisioning Target Group ($TARGET_GROUP_NAME)..."
 TG_ARN=$(aws elbv2 describe-target-groups --names "$TARGET_GROUP_NAME" --query "TargetGroups[0].TargetGroupArn" --output text 2>/dev/null || true)
 
@@ -107,6 +111,7 @@ if [ "$TG_ARN" == "None" ] || [ -z "$TG_ARN" ]; then
         --health-check-timeout-seconds 5 \
         --healthy-threshold-count 2 \
         --unhealthy-threshold-count 3 \
+        --matcher "HttpCode=200" \
         --target-type instance \
         --query "TargetGroups[0].TargetGroupArn" --output text)
     echo "   - Created Target Group ARN: $TG_ARN"
