@@ -66,7 +66,7 @@ else
 fi
 
 echo "[5/7] Writing Production .env Environment File..."
-cat << 'EOF' > "$WORK_DIR/.env"
+cat << EOF > "$WORK_DIR/.env"
 APP_NAME=HH_Goa_Voice_RAG
 ENVIRONMENT=production
 LOG_LEVEL=INFO
@@ -75,10 +75,10 @@ QDRANT_COLLECTION_NAME=RAG-1
 EMBEDDING_MODEL_NAME=intfloat/multilingual-e5-small
 VECTOR_DIMENSION=384
 DISTANCE_METRIC=Cosine
-GROQ_API_KEY=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
+GROQ_API_KEY="${GROQ_API_KEY:-YOUR_GROQ_API_KEY_HERE}"
 GROQ_MODEL=llama-3.1-8b-instant
-SARVAM_API_KEY=sk_ei4mup4m_QpTXhhGn8yUjKCpXGQ4U4Zfz
-ELEVENLABS_API_KEY=sk_2fa37506c9bf2525289609c8121b5d0dcd7da8781cf4a001
+SARVAM_API_KEY="${SARVAM_API_KEY:-YOUR_SARVAM_API_KEY_HERE}"
+ELEVENLABS_API_KEY="${ELEVENLABS_API_KEY:-YOUR_ELEVENLABS_API_KEY_HERE}"
 EOF
 
 echo "[6/7] Creating Systemd Service for FastAPI Uvicorn Backend..."
