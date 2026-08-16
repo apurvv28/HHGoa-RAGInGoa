@@ -135,11 +135,10 @@ async def voice_rag_query(
     )
 
     if not transcribed_text.strip():
-        transcribed_text = "भारत की राजधानी क्या है?"  # Fallback transcribed prompt if empty
+        transcribed_text = "What is the capital of India?" if language.startswith("en") else "भारत की राजधानी क्या है?"
 
     # 2. LangGraph RAG Pipeline Execution
-    lang_code = "hi" if "hi" in language.lower() else "en"
-    response = await run_rag_pipeline(query_text=transcribed_text, language=lang_code)
+    response = await run_rag_pipeline(query_text=transcribed_text, language=language)
 
     # 3. Text-to-Speech (TTS) Synthesis if requested
     tts_ms = 0.0

@@ -21,24 +21,28 @@ logger = logging.getLogger(__name__)
 # ─────────────────────────────────────────────────────────────────────────────
 
 ILLEGAL_PATTERNS = {
-    "violence": [
-        "bomb", "explosive", "विस्फोटक", "blast", "kill", "murder", "मारना", "हत्या",
-        "shoot", "गोली", "knife attack", "चाकू", "terrorism", "आतंकवाद", "terrorist",
-        "jihad", "genocide", "नरसंहार", "mass shooting", "beheading"
-    ],
     "weapons": [
-        "weapon", "हथियार", "gun", "pistol", "rifle", "grenade", "ak47", "ak-47",
-        "make a bomb", "बम बनाना", "improvised explosive", "chemical weapon", "रासायनिक हथियार"
+        "bomb", "bombs", "bombing", "make a bomb", "making a bomb", "how to make a bomb",
+        "bomb process", "bomb making", "explosive", "explosives", "improvised explosive",
+        "बॉम्ब", "बॉम", "बम", "बम्ब", "बॉम्ब्स", "बॉम्ब बनाने", "बम बनाने", "बनाया जाता है",
+        "विस्फोटक", "विस्फोट", "धमाका", "chemical weapon", "biological weapon",
+        "weapon", "weapons", "gun", "pistol", "rifle", "grenade", "ak47", "ak-47",
+        "हथियार", "हथियारों", "बंदूक", "पिस्तौल", "गोली", "राइफल", "तपंचा", "कट्टा"
+    ],
+    "violence": [
+        "blast", "kill", "murder", "मारना", "हत्या", "shoot", "knife attack", "चाकू",
+        "terrorism", "आतंकवाद", "terrorist", "jihad", "genocide", "नरसंहार",
+        "mass shooting", "beheading", "गर्दन काटना"
     ],
     "drugs": [
         "heroin", "cocaine", "meth", "crystal meth", "drugs kaise", "नशा कैसे",
         "drug trafficking", "smuggling", "तस्करी", "mdma", "lsd", "ketamine",
-        "how to make drugs", "ड्रग्स कैसे बनाएं"
+        "how to make drugs", "ड्रग्स कैसे बनाएं", "नशा", "नशीले", "गांजा", "चरस", "अफीम"
     ],
     "cybercrime": [
-        "hack", "hacking", "malware", "ransomware", "phishing", "ddos", "exploit",
+        "hack", "hacking", "hacker", "malware", "ransomware", "phishing", "ddos", "exploit",
         "sql injection", "crack password", "पासवर्ड तोड़ना", "keylogger", "trojan",
-        "bypass security", "how to hack"
+        "bypass security", "how to hack", "हैकिंग", "हैक"
     ],
     "fraud": [
         "scam", "fraud", "धोखाधड़ी", "counterfeit", "नकली", "money laundering",
@@ -68,20 +72,16 @@ ALL_ILLEGAL_TERMS: list[tuple[str, str]] = [
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 2. REFUSAL MESSAGES (Bilingual)
+# 2. REFUSAL MESSAGES (Language-Aware Safety Notices)
 # ─────────────────────────────────────────────────────────────────────────────
 
 REFUSAL_MESSAGES = {
-    "violence":         "⚠️ यह प्रश्न हिंसा से संबंधित है। मैं इस पर जानकारी प्रदान नहीं कर सकता। | This query involves violence and cannot be answered.",
-    "weapons":          "⚠️ हथियार निर्माण या उपयोग से संबंधित जानकारी प्रदान करना संभव नहीं है। | Weapon-related queries are not supported.",
-    "drugs":            "⚠️ नशीले पदार्थों से संबंधित जानकारी प्रदान करना नीति के विरुद्ध है। | Drug-related queries violate our policy.",
-    "cybercrime":       "⚠️ साइबर अपराध या हैकिंग से संबंधित प्रश्नों का उत्तर नहीं दिया जा सकता। | Cybercrime or hacking queries are not permitted.",
-    "fraud":            "⚠️ धोखाधड़ी, घोटाले या वित्तीय अपराध से संबंधित सहायता प्रदान नहीं की जा सकती। | Fraud-related assistance is not permitted.",
-    "self_harm":        "⚠️ यदि आप संकट में हैं तो कृपया iCall हेल्पलाइन 9152987821 पर संपर्क करें। | If you are in crisis, please call iCall: 9152987821.",
-    "sexual_illegal":   "⚠️ यह प्रश्न अनुचित और अवैध सामग्री से संबंधित है। | This query involves illegal content and is strictly prohibited.",
-    "hate_speech":      "⚠️ नफरत फैलाने वाले प्रश्नों का उत्तर देना संभव नहीं है। | Hate speech queries are not permitted.",
-    "unsafe":           "⚠️ यह प्रश्न सुरक्षा नीति का उल्लंघन करता है। | This query violates our safety policy.",
-    "out_of_corpus":    "ℹ️ इस प्रश्न का उत्तर उपलब्ध ज्ञान संदर्भ में नहीं मिला। | The answer to this query was not found in the available knowledge base.",
+    "en": "⚠️ Safety Notice: Queries regarding explosives, weapons, or illegal activities are strictly prohibited.",
+    "hi": "⚠️ सुरक्षा सूचना: बम, हथियार निर्माण, हिंसा या अवैध गतिविधियों से संबंधित प्रश्नों का उत्तर देना सख्त मना है।",
+    "mr": "⚠️ सुरक्षा सूचना: बॉम्ब, शस्त्र निर्मिती किंवा बेकायदेशीर गोष्टींबाबत माहिती देणे पूर्णपणे प्रतिबंधित आहे.",
+    "bn": "⚠️ সুরক্ষা সতর্কতা: বোমা বা অস্ত্র তৈরি সংক্রান্ত প্রশ্নের উত্তর দেওয়া সম্পূর্ণ নিষিদ্ধ।",
+    "ta": "⚠️ பாதுகாப்பு அறிவிப்பு: வெடிபொருட்கள் அல்லது சட்டவிரோத விஷயங்கள் குறித்த தகவல்கள் அனுமதிக்கப்படாது.",
+    "te": "⚠️ భద్రతా సూచన: పేలుడు పదార్థాలు లేదా ఆయుధాల తయారీకి సంబంధించిన ప్రశ్నలు నిషేధించబడ్డాయి."
 }
 
 
@@ -92,7 +92,7 @@ REFUSAL_MESSAGES = {
 def check_input_safety(query: str) -> tuple[bool, str]:
     """
     Comprehensive input safety check.
-    Detects illegal content, harmful queries, hate speech, cybercrime, etc.
+    Detects illegal content, harmful queries, hate speech, cybercrime, explosives, etc.
     Returns (is_safe, category_or_SAFE).
     """
     query_lower = query.lower().strip()
@@ -101,7 +101,7 @@ def check_input_safety(query: str) -> tuple[bool, str]:
     query_clean = re.sub(r'[^\w\s]', ' ', query_lower)
 
     for term, category in ALL_ILLEGAL_TERMS:
-        # Use word-boundary-aware check
+        # Check both cleaned text and direct substring match (crucial for Devanagari diacritics like बॉम्ब)
         if term in query_clean or term in query_lower:
             logger.warning(f"GUARDRAIL BLOCKED [{category}]: query='{query[:60]}...', term='{term}'")
             return False, category
@@ -139,7 +139,7 @@ def check_hallucination(answer: str, context_chunks: list[PassageChunk]) -> tupl
         return False, "NO_CONTEXT_OR_EMPTY_ANSWER"
 
     # Refusal answers are always "grounded" (not hallucinated)
-    if any(marker in answer for marker in ["⚠️", "ℹ️", "अपर्याप्त", "SAFE"]):
+    if any(marker in answer for marker in ["⚠️", "ℹ️", "सुरक्षा", "Notice", "अपर्याप्त", "SAFE"]):
         return True, "REFUSAL_GROUNDED"
 
     # Extract significant words from context (4+ chars to filter stop words)
@@ -165,10 +165,8 @@ def check_hallucination(answer: str, context_chunks: list[PassageChunk]) -> tupl
 
 
 def generate_refusal_answer(reason: str, language: str = "hi") -> str:
-    """Generates bilingual refusal response based on guardrail category."""
-    for category, message in REFUSAL_MESSAGES.items():
-        if category.upper() in reason.upper() or reason.lower() == category.lower():
-            return message
-
-    # Default safety refusal
-    return REFUSAL_MESSAGES["unsafe"]
+    """Generates language-aware safety refusal response based on guardrail category."""
+    lang_key = (language or "hi").split("-")[0].lower()
+    if lang_key in REFUSAL_MESSAGES:
+        return REFUSAL_MESSAGES[lang_key]
+    return REFUSAL_MESSAGES["hi"]

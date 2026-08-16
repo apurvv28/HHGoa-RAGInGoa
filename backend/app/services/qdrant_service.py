@@ -112,9 +112,16 @@ class QdrantService:
                     ),
                 )
                 logger.info(f"Collection '{self.collection_name}' created successfully.")
-            else:
-                logger.info(f"Collection '{self.collection_name}' already exists.")
 
+            # Create payload index on language field for indexed filtering
+            try:
+                self.client.create_payload_index(
+                    collection_name=self.collection_name,
+                    field_name="language",
+                    field_schema=models.PayloadSchemaType.KEYWORD
+                )
+            except Exception:
+                pass  # Index already exists or not supported in memory
         except Exception as e:
             logger.error(f"Error ensuring Qdrant collection: {e}")
 

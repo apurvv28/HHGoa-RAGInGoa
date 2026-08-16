@@ -1,133 +1,187 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@600;700;800&family=Space+Mono:wght@400;700&display=swap');
+@import "tailwindcss";
 
-:root {
-  --bg-dark: #090d16;
-  --bg-card: rgba(18, 24, 38, 0.7);
-  --bg-card-hover: rgba(28, 36, 56, 0.85);
-  --border-glow: rgba(0, 242, 254, 0.25);
-  --primary-cyan: #00f2fe;
-  --primary-blue: #4facfe;
-  --primary-purple: #7f00ff;
-  --accent-green: #00e676;
-  --accent-amber: #ffab00;
-  --text-main: #f0f4f8;
-  --text-muted: #94a3b8;
-  --font-main: 'Outfit', sans-serif;
-  --font-mono: 'Space Mono', monospace;
-}
+@layer base {
+  :root {
+    --hh-green: #075E34;
+    --hh-green-dark: #044425;
+    --hh-green-light: #0C7A45;
+    --hh-yellow: #FFE500;
+    --hh-pink: #FF1D78;
+    --hh-cream: #FEFCE8;
+    --hh-bamboo: #EAB308;
+    
+    --font-mono: 'Space Mono', monospace;
+    --font-serif: var(--font-bodoni), Georgia, serif;
+    --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+    --font-outfit: 'Outfit', sans-serif;
+    --font-syne: 'Syne', sans-serif;
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+    /* Legacy RAG support tokens */
+    --bg-dark: #044425;
+    --bg-card: rgba(7, 94, 52, 0.85);
+    --border-glow: #FFE500;
+    --primary-cyan: #FFE500;
+    --primary-blue: #0C7A45;
+    --primary-purple: #FF1D78;
+    --accent-green: #FFE500;
+    --accent-amber: #EAB308;
+    --text-main: #FEFCE8;
+    --text-muted: rgba(254, 252, 232, 0.75);
+  }
 }
 
 body {
-  background-color: var(--bg-dark);
-  background-image: 
-    radial-gradient(circle at 15% 15%, rgba(0, 242, 254, 0.08) 0%, transparent 40%),
-    radial-gradient(circle at 85% 85%, rgba(127, 0, 255, 0.08) 0%, transparent 40%);
-  color: var(--text-main);
-  font-family: var(--font-main);
-  min-height: 100vh;
-  overflow-x: hidden;
+  background-color: #075E34;
+  color: #FEFCE8;
+  font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
-/* Glassmorphism Card Utility */
-.glass-card {
-  background: var(--bg-card);
+/* Custom Goan Theme Colors */
+.bg-hh-green { background-color: #075E34; }
+.bg-hh-green-dark { background-color: #044425; }
+.bg-hh-yellow { background-color: #FFE500; }
+.bg-hh-pink { background-color: #FF1D78; }
+.bg-hh-cream { background-color: #FEFCE8; }
+.text-hh-green { color: #075E34; }
+.text-hh-yellow { color: #FFE500; }
+.text-hh-pink { color: #FF1D78; }
+.border-hh-yellow { border-color: #FFE500; }
+.border-hh-pink { border-color: #FF1D78; }
+.border-hh-green { border-color: #075E34; }
+
+/* Custom Text Stroke & Glow Effects */
+.text-stroke-yellow {
+  -webkit-text-stroke: 2px #FFE500;
+  text-shadow: 0 0 10px rgba(255, 229, 0, 0.4);
+}
+
+.text-stroke-dark {
+  -webkit-text-stroke: 1.5px #044425;
+}
+
+/* Modern Goan Glassmorphism & Neon Glow */
+.glass-card, .glass-panel {
+  background: rgba(4, 68, 37, 0.88);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 229, 0, 0.35);
   border-radius: 16px;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
 
 .glass-card:hover {
-  border-color: var(--border-glow);
-  box-shadow: 0 12px 40px 0 rgba(0, 242, 254, 0.15);
+  border-color: #FFE500;
+  box-shadow: 0 12px 40px rgba(255, 229, 0, 0.2);
 }
 
-/* Glowing Pulsing Recording Mic Button */
+.glass-dark-header {
+  background: linear-gradient(135deg, #075E34 0%, #03311b 100%);
+  border-bottom: 2px solid #FFE500;
+}
+
+.neon-border-pink {
+  box-shadow: 0 0 15px rgba(255, 29, 120, 0.4);
+}
+
+.neon-border-yellow {
+  box-shadow: 0 0 15px rgba(255, 229, 0, 0.4);
+}
+
+/* Notice Board Post-it Card Styling */
+.postit-card {
+  background-color: #044425;
+  border: 2px solid #FFE500;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+  border-radius: 16px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.postit-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 15px 35px -5px rgba(255, 229, 0, 0.2);
+}
+
+/* Mic Button with Goan Neon Pink / Yellow Pulse */
 .mic-btn {
   width: 90px;
   height: 90px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary-cyan), var(--primary-blue));
-  border: none;
-  color: #000;
+  background: linear-gradient(135deg, #FFE500, #EAB308);
+  border: 3px solid #044425;
+  color: #044425;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 0 25px rgba(0, 242, 254, 0.4);
+  box-shadow: 0 0 25px rgba(255, 229, 0, 0.6);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .mic-btn:hover {
   transform: scale(1.08);
-  box-shadow: 0 0 40px rgba(0, 242, 254, 0.7);
+  box-shadow: 0 0 40px rgba(255, 229, 0, 0.9);
 }
 
 .mic-btn.recording {
-  background: linear-gradient(135deg, #ff0055, #ff5500);
-  animation: pulse-ring 1.5s infinite;
+  background: linear-gradient(135deg, #FF1D78, #ff0055);
+  color: #FEFCE8;
+  animation: pulse-ring-pink 1.5s infinite;
 }
 
-@keyframes pulse-ring {
+@keyframes pulse-ring-pink {
   0% {
-    box-shadow: 0 0 0 0 rgba(255, 0, 85, 0.7);
+    box-shadow: 0 0 0 0 rgba(255, 29, 120, 0.8);
   }
   70% {
-    box-shadow: 0 0 0 25px rgba(255, 0, 85, 0);
+    box-shadow: 0 0 0 25px rgba(255, 29, 120, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(255, 0, 85, 0);
+    box-shadow: 0 0 0 0 rgba(255, 29, 120, 0);
   }
 }
 
 /* Badge tags */
 .badge {
-  padding: 4px 10px;
+  padding: 6px 14px;
   border-radius: 20px;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  font-family: 'Space Mono', monospace;
 }
 
-.badge-cyan {
-  background: rgba(0, 242, 254, 0.15);
-  color: var(--primary-cyan);
-  border: 1px solid rgba(0, 242, 254, 0.3);
+.badge-cyan, .badge-yellow {
+  background: rgba(255, 229, 0, 0.15);
+  color: #FFE500;
+  border: 1.5px solid #FFE500;
+}
+
+.badge-pink, .badge-purple {
+  background: rgba(255, 29, 120, 0.15);
+  color: #FF1D78;
+  border: 1.5px solid #FF1D78;
 }
 
 .badge-green {
-  background: rgba(0, 230, 118, 0.15);
-  color: var(--accent-green);
-  border: 1px solid rgba(0, 230, 118, 0.3);
-}
-
-.badge-purple {
-  background: rgba(127, 0, 255, 0.15);
-  color: #c084fc;
-  border: 1px solid rgba(127, 0, 255, 0.3);
-}
-
-/* Code / Mono Text */
-.font-mono {
-  font-family: var(--font-mono);
+  background: rgba(7, 94, 52, 0.8);
+  color: #FFE500;
+  border: 1.5px solid #FFE500;
 }
 
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg-dark);
+  background: #044425;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 3px;
+  background: #FFE500;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #FF1D78;
 }

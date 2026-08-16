@@ -46,15 +46,15 @@ async def node_embed_and_retrieve(state: RAGGraphState) -> RAGGraphState:
                 "is_in_domain": False,
                 "is_grounded": True,
                 "confidence_score": 0.0,
-                "reasoning": safety_reason
+                "reasoning": f"BLOCKED_SAFETY_VIOLATION [{safety_reason.upper()}]"
             }
         }
 
     # 2. Query Vectorization
     vec, embed_ms = embedding_service.embed_query(query)
 
-    # 3. Qdrant HNSW Search
-    chunks, qdrant_ms = qdrant_service.search(query_vector=vec, top_k=top_k, language_filter=lang)
+    # 3. Qdrant HNSW Search (Fast cross-lingual ANN search without unindexed payload filter scans)
+    chunks, qdrant_ms = qdrant_service.search(query_vector=vec, top_k=top_k, language_filter=None)
 
     retrieval_leg_ms = (time.perf_counter() - leg_start) * 1000
 

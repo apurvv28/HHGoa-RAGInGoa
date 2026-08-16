@@ -41,30 +41,50 @@ class GroqLLMService:
         """
         start_time = time.perf_counter()
 
+        lang_lower = (language or "hi").lower()
+        is_english = lang_lower.startswith("en") or (all(ord(c) < 128 for c in query.strip()[:30]) and not any(k in query.lower() for k in ["kya", "hai", "kaise", "kab", "kahan"]))
+        is_marathi = lang_lower.startswith("mr")
+
         if not context_chunks:
             latency_ms = (time.perf_counter() - start_time) * 1000
-            return "अपर्याप्त जानकारी। दिए गए संदर्भ के आधार पर इस प्रश्न का उत्तर नहीं दिया जा सकता।", latency_ms
+            if is_english:
+                return "Insufficient context. The answer could not be determined from the provided passages.", latency_ms
+            elif is_marathi:
+                return "अपुरा संदर्भ. दिलेल्या संदर्भाच्या आधारे या प्रश्नाचे उत्तर देता येत नाही.", latency_ms
+            else:
+                return "अपर्याप्त जानकारी। दिए गए संदर्भ के आधार पर इस प्रश्न का उत्तर नहीं दिया जा सकता।", latency_ms
 
         context_str = "\n\n".join([f"[{i+1}] {c.text}" for i, c in enumerate(context_chunks)])
 
-        # Prompt tuned for strict grounding and Indic response
+        # Prompt tuned for strict grounding, multi-script Indic matching, and safety rules
         system_prompt = (
             "You are an accurate, helpful multilingual AI assistant.\n"
-            "The query may be in Hindi, Hinglish (Hindi written in Roman script), or English — understand it accordingly.\n"
+            "CRITICAL MANDATE 1: You MUST answer the user in the EXACT SAME language and script as the User Question.\n"
+            "- If asked in English, answer ONLY in English.\n"
+            "- If asked in Marathi, answer ONLY in Marathi (Devanagari script).\n"
+            "- If asked in Hindi, answer ONLY in Hindi (Devanagari script).\n"
+            "- If asked in Hinglish (Hindi in Roman/Latin script), answer in Hinglish.\n"
+            "- If asked in Bengali, Tamil, Telugu, Gujarati, or any other Indic language, answer in that exact language.\n\n"
+            "SAFETY RULE: NEVER assist with dangerous, illegal, explosive, or weapon-related queries (like making a bomb). If asked about dangerous topics, refuse politely.\n"
+            "RELEVANCE RULE: Do NOT confuse unrelated topics (e.g. food dishes like bibimbap) with explosives, weapons, or dangerous materials.\n"
+            "CITATION RULE: NEVER write internal reference numbers like 'passage [1]', 'पैसेज [1]', or '[1]' in your text response. Write naturally.\n\n"
             "FIRST, try to answer using ONLY the provided context passages below.\n"
-            "If the context passages contain the answer, use them and cite the information.\n"
-            "If the context passages do NOT contain the answer, you may use your general knowledge to answer the question accurately.\n"
-            "Always respond in the same language/script as the user's query (Hindi if asked in Hindi, English if asked in English).\n"
+            "If the context passages do NOT contain the answer, answer accurately in the user's requested language based on factual knowledge.\n"
             "Keep the response concise (2-4 sentences max)."
         )
 
-        user_prompt = f"Context Passages:\n{context_str}\n\nUser Question: {query}\n\nAnswer:"
+        user_prompt = f"Target Language Code: {language}\nContext Passages:\n{context_str}\n\nUser Question: {query}\n\nAnswer:"
 
         if not self.api_key or not self.api_key.strip():
             # Fallback deterministic generator if GROQ_API_KEY is not set
             logger.warning("GROQ_API_KEY not set. Operating in fallback generation mode.")
             top_chunk = context_chunks[0]
-            answer = f"संदर्भ के अनुसार: {top_chunk.text}"
+            if is_english:
+                answer = f"According to context: {top_chunk.text}"
+            elif is_marathi:
+                answer = f"संदर्भाच्या आधारे: {top_chunk.text}"
+            else:
+                answer = f"संदर्भ के अनुसार: {top_chunk.text}"
             latency_ms = (time.perf_counter() - start_time) * 1000
             return answer, latency_ms
 
@@ -89,7 +109,12 @@ class GroqLLMService:
         except Exception as e:
             logger.error(f"Groq LLM generation call failed: {e}")
             top_chunk = context_chunks[0]
-            fallback_answer = f"संदर्भ: {top_chunk.text}"
+            if is_english:
+                fallback_answer = f"Context: {top_chunk.text}"
+            elif is_marathi:
+                fallback_answer = f"संदर्भ: {top_chunk.text}"
+            else:
+                fallback_answer = f"संदर्भ: {top_chunk.text}"
             latency_ms = (time.perf_counter() - start_time) * 1000
             return fallback_answer, latency_ms
 

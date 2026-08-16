@@ -1,7 +1,11 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { Mic, MicOff, Send, Zap, ShieldCheck, Database, Volume2, Sparkles, Layers } from 'lucide-react';
+import { Mic, MicOff, Send, Zap, ShieldCheck, Volume2, Sparkles } from 'lucide-react';
+import { GoanBorderTape } from '@/components/GoanBorderTape';
+import { Header } from '@/components/Header';
+import { HeroLogo } from '@/components/HeroLogo';
+import { Footer } from '@/components/Footer';
 
 interface Chunk {
   chunk_id: string;
@@ -143,219 +147,232 @@ export default function VoiceRAGPage() {
   };
 
   return (
-    <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '32px 20px' }}>
-      {/* Header Banner */}
-      <header style={{ textAlign: 'center', marginBottom: '40px' }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-          <span className="badge badge-purple">Team TechTadkaa</span>
-          <span className="badge badge-cyan">MSMARCO-XI Indic Corpus</span>
+    <main className="min-h-screen bg-[#075E34] bg-[url('/Sun%20rise.png')] bg-top bg-no-repeat bg-cover text-[#FFE500] flex flex-col justify-between overflow-x-hidden relative select-none">
+      {/* Top Traditional Goan Geometric Border Tape */}
+      <GoanBorderTape />
+
+      {/* Main Header Bar */}
+      <Header />
+
+      {/* Hero Section with Official Hacker House Goa Artwork */}
+      <section className="relative w-full max-w-7xl mx-auto px-4 py-4 flex flex-col items-center justify-center">
+        <div className="flex flex-wrap items-center justify-center gap-3 mb-2">
+          <span className="badge badge-pink shadow-md">Team TechTadkaa</span>
+          <span className="badge badge-yellow shadow-md">MSMARCO-XI Indic Corpus</span>
         </div>
-        <h1 style={{ fontSize: '2.5rem', fontWeight: 800, background: 'linear-gradient(135deg, #00f2fe, #4facfe, #7f00ff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+
+        <HeroLogo size="md" />
+
+        <h1 className="font-mono text-xl md:text-3xl font-black text-[#FFE500] text-center tracking-wider uppercase text-stroke-dark mt-2">
           Voice-Enabled RAG System
         </h1>
-        <p style={{ color: 'var(--text-muted)', marginTop: '8px', fontSize: '1.05rem' }}>
-          Sub-100ms Retrieval Leg | Sarvam AI & ElevenLabs Voice Integration | Groq Llama 3.1
+        <p className="font-mono text-xs md:text-sm text-[#FEFCE8]/80 text-center mt-2 max-w-2xl bg-[#044425]/80 px-4 py-2 rounded-lg border border-[#FFE500]/30 shadow-inner">
+          Sarvam AI & ElevenLabs Voice Integration • Groq Llama 3.1
         </p>
-      </header>
+      </section>
 
-      {/* Main Grid Layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '28px' }}>
-        {/* Left Column: Voice & Query Input */}
-        <section style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          {/* Voice Mic Section */}
-          <div className="glass-card" style={{ padding: '32px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <h2 style={{ fontSize: '1.2rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Volume2 color="var(--primary-cyan)" size={22} /> Speak in Hindi or English
-            </h2>
+      {/* Main Dashboard Layout Container */}
+      <div className="w-full max-w-7xl mx-auto px-4 py-6 flex-1 flex flex-col gap-8 z-10">
+        
+        {/* Main Grid Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          
+          {/* Left Column: Voice & Query Input */}
+          <section className="flex flex-col gap-6">
+            
+            {/* Voice Mic Section */}
+            <div className="glass-card postit-card p-6 md:p-8 text-center flex flex-col items-center justify-center relative overflow-hidden">
+              <div className="flex items-center gap-2 mb-6 text-[#FFE500] font-mono font-bold text-lg">
+                <Volume2 className="text-[#FFE500]" size={22} />
+                <span>Speak in Hindi or English</span>
+              </div>
 
-            <button
-              id="mic-recording-button"
-              className={`mic-btn ${isRecording ? 'recording' : ''}`}
-              onClick={isRecording ? stopRecording : startRecording}
-              disabled={loading}
-              title={isRecording ? 'Stop Recording' : 'Start Voice Input'}
-            >
-              {isRecording ? <MicOff size={36} /> : <Mic size={36} />}
-            </button>
-
-            <p style={{ marginTop: '16px', fontSize: '0.9rem', color: isRecording ? '#ff0055' : 'var(--text-muted)' }}>
-              {isRecording ? 'Listening... Click again to process' : 'Click microphone to record voice prompt'}
-            </p>
-
-            <div style={{ marginTop: '20px', display: 'flex', gap: '12px' }}>
               <button
-                className={`badge ${language === 'hi-IN' ? 'badge-cyan' : ''}`}
-                style={{ cursor: 'pointer', background: language === 'hi-IN' ? undefined : 'transparent' }}
-                onClick={() => setLanguage('hi-IN')}
+                id="mic-recording-button"
+                className={`mic-btn ${isRecording ? 'recording' : ''}`}
+                onClick={isRecording ? stopRecording : startRecording}
+                disabled={loading}
+                title={isRecording ? 'Stop Recording' : 'Start Voice Input'}
               >
-                Hindi (हिन्दी)
+                {isRecording ? <MicOff size={36} /> : <Mic size={36} />}
               </button>
-              <button
-                className={`badge ${language === 'en-IN' ? 'badge-cyan' : ''}`}
-                style={{ cursor: 'pointer', background: language === 'en-IN' ? undefined : 'transparent' }}
-                onClick={() => setLanguage('en-IN')}
-              >
-                English
-              </button>
-            </div>
-          </div>
 
-          {/* Text Query Input Fallback */}
-          <form className="glass-card" onSubmit={handleTextSubmit} style={{ padding: '24px' }}>
-            <h3 style={{ fontSize: '1rem', marginBottom: '12px', color: 'var(--text-muted)' }}>Or type query manually:</h3>
-            <div style={{ display: 'flex', gap: '12px' }}>
-              <input
-                id="query-text-input"
-                type="text"
-                value={queryText}
-                onChange={(e) => setQueryText(e.target.value)}
-                placeholder={language.startsWith('hi') ? 'अपना प्रश्न यहाँ टाइप करें...' : 'Type your question here...'}
-                style={{
-                  flex: 1,
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '10px',
-                  padding: '12px 16px',
-                  color: '#fff',
-                  fontSize: '1rem',
-                  outline: 'none'
-                }}
-              />
-              <button
-                id="submit-query-btn"
-                type="submit"
-                disabled={loading || !queryText.trim()}
-                style={{
-                  background: queryText.trim()
-                    ? 'linear-gradient(135deg, var(--primary-cyan), var(--primary-blue))'
-                    : 'rgba(255,255,255,0.1)',
-                  border: 'none',
-                  borderRadius: '10px',
-                  padding: '0 20px',
-                  color: queryText.trim() ? '#000' : '#666',
-                  fontWeight: 700,
-                  cursor: queryText.trim() ? 'pointer' : 'not-allowed',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  transition: 'all 0.2s'
-                }}
-              >
-                <Send size={18} /> {loading ? 'Processing...' : 'Search'}
-              </button>
-            </div>
-            {response && (
-              <p style={{ marginTop: '8px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                Last query: <span style={{ color: 'var(--primary-cyan)' }}>&ldquo;{response.query}&rdquo;</span>
+              <p className={`mt-5 font-mono text-xs md:text-sm font-bold ${isRecording ? 'text-[#FF1D78] animate-pulse' : 'text-[#FEFCE8]/80'}`}>
+                {isRecording ? 'Listening... Click again to process' : 'Click microphone to record voice prompt'}
+              </p>
+
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setResponse(null)}
-                  style={{ marginLeft: '10px', color: '#ff6b6b', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.8rem' }}
+                  className={`badge transition-all cursor-pointer ${language === 'hi-IN' ? 'bg-[#FFE500] text-[#044425] border-[#FFE500]' : 'bg-transparent text-[#FFE500] border-[#FFE500]/40 hover:border-[#FFE500]'}`}
+                  onClick={() => setLanguage('hi-IN')}
                 >
-                  ✕ Clear results
+                  Hindi (हिन्दी)
                 </button>
-              </p>
-            )}
-          </form>
-        </section>
-
-        {/* Right Column: Latency Metrics & Response */}
-        <section style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          {/* Latency Dashboard Panel */}
-          <div className="glass-card" style={{ padding: '24px' }}>
-            <h2 style={{ fontSize: '1.2rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Zap color="var(--primary-cyan)" size={22} /> Per-Stage Latency Breakdown
-            </h2>
-
-            {response ? (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '12px', borderRadius: '10px' }}>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>STT (Sarvam AI)</span>
-                  <p className="font-mono" style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--primary-cyan)' }}>
-                    {response.latency.stt_ms} ms
-                  </p>
-                </div>
-
-                <div style={{ background: 'rgba(0, 242, 254, 0.1)', padding: '12px', borderRadius: '10px', border: '1px solid var(--primary-cyan)' }}>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Retrieval Leg Target</span>
-                  <p className="font-mono" style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--accent-green)' }}>
-                    {response.latency.retrieval_leg_ms} ms
-                    <span style={{ fontSize: '0.7rem', marginLeft: '6px', color: '#888' }}>( {'<100ms'} )</span>
-                  </p>
-                </div>
-
-                <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '12px', borderRadius: '10px' }}>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>LLM Generation (Groq)</span>
-                  <p className="font-mono" style={{ fontSize: '1.1rem', fontWeight: 700, color: '#c084fc' }}>
-                    {response.latency.generation_ms} ms
-                  </p>
-                </div>
-
-                <div style={{ background: 'rgba(255, 255, 255, 0.03)', padding: '12px', borderRadius: '10px' }}>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Total E2E Pipeline</span>
-                  <p className="font-mono" style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff' }}>
-                    {response.latency.total_e2e_ms} ms
-                  </p>
-                </div>
+                <button
+                  type="button"
+                  className={`badge transition-all cursor-pointer ${language === 'en-IN' ? 'bg-[#FFE500] text-[#044425] border-[#FFE500]' : 'bg-transparent text-[#FFE500] border-[#FFE500]/40 hover:border-[#FFE500]'}`}
+                  onClick={() => setLanguage('en-IN')}
+                >
+                  English
+                </button>
+                <button
+                  type="button"
+                  className={`badge transition-all cursor-pointer ${language === 'mr-IN' ? 'bg-[#FFE500] text-[#044425] border-[#FFE500]' : 'bg-transparent text-[#FFE500] border-[#FFE500]/40 hover:border-[#FFE500]'}`}
+                  onClick={() => setLanguage('mr-IN')}
+                >
+                  Marathi (मराठी)
+                </button>
+                <button
+                  type="button"
+                  className={`badge transition-all cursor-pointer ${language === 'bn-IN' ? 'bg-[#FFE500] text-[#044425] border-[#FFE500]' : 'bg-transparent text-[#FFE500] border-[#FFE500]/40 hover:border-[#FFE500]'}`}
+                  onClick={() => setLanguage('bn-IN')}
+                >
+                  Bengali (বাংলা)
+                </button>
+                <button
+                  type="button"
+                  className={`badge transition-all cursor-pointer ${language === 'te-IN' ? 'bg-[#FFE500] text-[#044425] border-[#FFE500]' : 'bg-transparent text-[#FFE500] border-[#FFE500]/40 hover:border-[#FFE500]'}`}
+                  onClick={() => setLanguage('te-IN')}
+                >
+                  Telugu (తెలుగు)
+                </button>
+                <button
+                  type="button"
+                  className={`badge transition-all cursor-pointer ${language === 'ta-IN' ? 'bg-[#FFE500] text-[#044425] border-[#FFE500]' : 'bg-transparent text-[#FFE500] border-[#FFE500]/40 hover:border-[#FFE500]'}`}
+                  onClick={() => setLanguage('ta-IN')}
+                >
+                  Tamil (தமிழ்)
+                </button>
               </div>
-            ) : (
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic' }}>
-                Run a voice or text query to view live latency benchmarks.
-              </p>
-            )}
-          </div>
+            </div>
 
-          {/* Generated Answer & Guardrail Status */}
-          <div className="glass-card" style={{ padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <h2 style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Sparkles color="var(--primary-purple)" size={22} /> Generated Response
-              </h2>
+            {/* Text Query Input Fallback */}
+            <form className="glass-card postit-card p-6 flex flex-col gap-3" onSubmit={handleTextSubmit}>
+              <h3 className="font-mono text-xs font-bold text-[#FFE500]/90 uppercase tracking-wider">
+                Or type query manually:
+              </h3>
+              <div className="flex gap-3">
+                <input
+                  id="query-text-input"
+                  type="text"
+                  value={queryText}
+                  onChange={(e) => setQueryText(e.target.value)}
+                  placeholder={language.startsWith('hi') ? 'अपना प्रश्न यहाँ टाइप करें...' : 'Type your question here...'}
+                  className="flex-1 bg-[#044425] border-2 border-[#FFE500]/50 rounded-xl px-4 py-3 text-[#FEFCE8] font-mono text-sm placeholder-[#FEFCE8]/40 outline-none focus:border-[#FFE500] focus:ring-2 focus:ring-[#FFE500]/30 transition-all"
+                />
+                <button
+                  id="submit-query-btn"
+                  type="submit"
+                  disabled={loading || !queryText.trim()}
+                  className={`font-mono text-xs font-black px-6 py-3 rounded-xl border-2 uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
+                    queryText.trim()
+                      ? 'bg-[#FFE500] hover:bg-[#FF1D78] text-[#044425] hover:text-[#FEFCE8] border-[#FFE500] hover:border-[#FF1D78] shadow-md hover:-translate-y-0.5'
+                      : 'bg-[#044425]/60 text-[#FEFCE8]/40 border-[#FFE500]/20 cursor-not-allowed'
+                  }`}
+                >
+                  <Send size={16} />
+                  <span>{loading ? 'Processing...' : 'Search'}</span>
+                </button>
+              </div>
               {response && (
-                <span className={`badge ${response.guardrail.is_grounded ? 'badge-green' : ''}`}>
-                  <ShieldCheck size={14} style={{ display: 'inline', marginRight: '4px' }} />
-                  {response.guardrail.reasoning}
-                </span>
+                <div className="mt-2 font-mono text-xs flex items-center justify-between text-[#FEFCE8]/80 bg-[#044425]/80 px-3 py-2 rounded-lg border border-[#FFE500]/20">
+                  <span>
+                    Last query: <span className="text-[#FFE500] font-bold">&ldquo;{response.query}&rdquo;</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setResponse(null)}
+                    className="text-[#FF1D78] hover:underline font-bold ml-3 cursor-pointer"
+                  >
+                    ✕ Clear results
+                  </button>
+                </div>
+              )}
+            </form>
+          </section>
+
+          {/* Right Column: Latency Metrics & Response */}
+          <section className="flex flex-col gap-6">
+            
+            {/* Latency Dashboard Panel */}
+            <div className="glass-card postit-card p-6">
+              <h2 className="font-mono text-base font-bold text-[#FFE500] flex items-center gap-2 mb-4 uppercase tracking-wider">
+                <Zap className="text-[#FFE500]" size={20} />
+                <span>Per-Stage Latency Breakdown</span>
+              </h2>
+
+              {response ? (
+                <div className="grid grid-cols-2 gap-3 font-mono">
+                  <div className="bg-[#044425]/90 p-3 rounded-xl border border-[#FFE500]/30 flex flex-col">
+                    <span className="text-[11px] text-[#FEFCE8]/70 font-semibold">STT (Sarvam AI)</span>
+                    <span className="text-base font-black text-[#FFE500] mt-1">{response.latency.stt_ms} ms</span>
+                  </div>
+
+                  <div className="bg-[#075E34] p-3 rounded-xl border-2 border-[#FFE500] shadow-[0_0_15px_rgba(255,229,0,0.25)] flex flex-col">
+                    <span className="text-[11px] text-[#FFE500] font-bold uppercase">Retrieval Leg Target</span>
+                    <span className="text-base font-black text-[#FFE500] mt-1">
+                      {response.latency.retrieval_leg_ms} ms
+                    </span>
+                  </div>
+
+                  <div className="bg-[#044425]/90 p-3 rounded-xl border border-[#FFE500]/30 flex flex-col">
+                    <span className="text-[11px] text-[#FEFCE8]/70 font-semibold">LLM Generation (Groq)</span>
+                    <span className="text-base font-black text-[#FF1D78] mt-1">{response.latency.generation_ms} ms</span>
+                  </div>
+
+                  <div className="bg-[#044425]/90 p-3 rounded-xl border border-[#FFE500]/30 flex flex-col">
+                    <span className="text-[11px] text-[#FEFCE8]/70 font-semibold">Total E2E Pipeline</span>
+                    <span className="text-base font-black text-[#FEFCE8] mt-1">{response.latency.total_e2e_ms} ms</span>
+                  </div>
+                </div>
+              ) : (
+                <p className="font-mono text-xs text-[#FEFCE8]/60 italic bg-[#044425]/50 p-4 rounded-xl border border-[#FFE500]/20 text-center">
+                  Run a voice or text query to view live latency benchmarks.
+                </p>
               )}
             </div>
 
-            <div style={{ background: 'rgba(0, 0, 0, 0.25)', padding: '16px', borderRadius: '12px', minHeight: '90px' }}>
-              {loading ? (
-                <p style={{ color: 'var(--primary-cyan)' }}>Processing query through LangGraph pipeline...</p>
-              ) : response ? (
-                <p style={{ fontSize: '1.05rem', lineHeight: '1.6' }}>{response.answer}</p>
-              ) : (
-                <p style={{ color: 'var(--text-muted)' }}>Waiting for query input...</p>
-              )}
+            {/* Generated Answer & Guardrail Status */}
+            <div className="glass-card postit-card p-6 flex flex-col gap-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h2 className="font-mono text-base font-bold text-[#FFE500] flex items-center gap-2 uppercase tracking-wider">
+                  <Sparkles className="text-[#FF1D78]" size={20} />
+                  <span>Generated Response</span>
+                </h2>
+                {response && (
+                  <span className="badge badge-pink flex items-center gap-1">
+                    <ShieldCheck size={14} />
+                    <span>{response.guardrail.reasoning}</span>
+                  </span>
+                )}
+              </div>
+
+              <div className="bg-[#044425]/90 border border-[#FFE500]/30 p-4 rounded-xl min-h-[110px] flex items-center">
+                {loading ? (
+                  <p className="font-mono text-xs md:text-sm text-[#FFE500] animate-pulse">
+                    Processing query through LangGraph pipeline...
+                  </p>
+                ) : response ? (
+                  <p className="font-sans text-sm md:text-base text-[#FEFCE8] leading-relaxed">
+                    {response.answer}
+                  </p>
+                ) : (
+                  <p className="font-mono text-xs text-[#FEFCE8]/50 italic">
+                    Waiting for query input...
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        </div>
       </div>
 
-      {/* Bottom Section: Retrieved Context Chunks Transparency Inspector */}
-      {response && response.retrieved_chunks && response.retrieved_chunks.length > 0 && (
-        <section className="glass-card" style={{ marginTop: '36px', padding: '28px' }}>
-          <h2 style={{ fontSize: '1.2rem', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Database color="var(--primary-cyan)" size={22} /> Retrieved Passages Inspector (Qdrant Vector DB)
-          </h2>
+      {/* Bottom Traditional Goan Geometric Border Tape */}
+      <GoanBorderTape className="mt-8" />
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
-            {response.retrieved_chunks.map((chunk, idx) => (
-              <div key={chunk.chunk_id || idx} style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.07)', borderRadius: '12px', padding: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <span className="font-mono" style={{ fontSize: '0.8rem', color: 'var(--primary-cyan)' }}>
-                    [{chunk.doc_id}] Chunk #{idx + 1}
-                  </span>
-                  <span className="badge badge-green" style={{ fontSize: '0.7rem' }}>
-                    Score: {chunk.score.toFixed(4)}
-                  </span>
-                </div>
-                <p style={{ fontSize: '0.9rem', color: '#e2e8f0', lineHeight: '1.5' }}>{chunk.text}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
+      {/* Goan Footer */}
+      <Footer />
     </main>
   );
 }

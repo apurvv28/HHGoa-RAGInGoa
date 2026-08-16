@@ -26,7 +26,7 @@ class IndicEmbeddingService:
         return cls._instance
 
     def load_model(self) -> None:
-        """Loads the SentenceTransformer model into memory."""
+        """Loads the SentenceTransformer model into memory and runs a warmup query."""
         if self.model is not None:
             return
 
@@ -34,10 +34,21 @@ class IndicEmbeddingService:
         start_time = time.perf_counter()
 
         try:
+            import torch
+            # Set 2 CPU threads for optimal single-query encoding speed without thread lock overhead
+            num_threads = min(2, torch.get_num_threads())
+            if num_threads > 0:
+                torch.set_num_threads(num_threads)
+
             from sentence_transformers import SentenceTransformer # type: ignore
             self.model = SentenceTransformer(self.model_name)
+            self.model.eval()
+
+            # Warmup inference call to ensure initial model weight & GPU/CPU allocations are cached
+            _ = self.model.encode("query: warmup prompt", normalize_embeddings=True)
+
             load_ms = (time.perf_counter() - start_time) * 1000
-            logger.info(f"Indic embedding model preloaded successfully in {load_ms:.2f}ms")
+            logger.info(f"Indic embedding model preloaded and warmed up in {load_ms:.2f}ms")
         except Exception as e:
             logger.error(f"Failed to load sentence-transformers model '{self.model_name}': {e}")
             self.model = None
