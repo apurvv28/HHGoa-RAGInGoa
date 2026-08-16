@@ -73,19 +73,10 @@ async def root_info():
     }
 
 
-@app.get("/health", response_model=HealthResponse, tags=["Health"])
+@app.get("/health", tags=["Health"])
 async def health_check():
-    """Health check endpoint verifying embedding model & Qdrant vector DB status."""
-    qdrant_ok = qdrant_service.client is not None
-    embedding_ok = embedding_service.model is not None
-
-    return HealthResponse(
-        status="ok" if (qdrant_ok and embedding_ok) else "degraded",
-        app_name=settings.APP_NAME,
-        environment=settings.ENVIRONMENT,
-        embedding_model=settings.EMBEDDING_MODEL_NAME,
-        qdrant_connected=qdrant_ok,
-    )
+    """Lightweight instant health check endpoint for AWS ALB probes."""
+    return {"status": "ok", "system": settings.APP_NAME, "environment": settings.ENVIRONMENT}
 
 
 from fastapi import File, UploadFile, Form

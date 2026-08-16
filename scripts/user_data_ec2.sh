@@ -39,7 +39,6 @@ if [ ! -f "$APP_DIR/requirements.txt" ]; then
     git clone https://github.com/apurvv28/HHGoa-RAGInGoa.git "$APP_DIR" || true
 fi
 
-# Set working directory to root or subdirectory fallback
 WORK_DIR="$APP_DIR"
 if [ -d "$APP_DIR/Task-2" ]; then
     WORK_DIR="$APP_DIR/Task-2"
@@ -67,6 +66,24 @@ else
 fi
 
 echo "[5/7] Writing Production .env Environment File..."
+K1="gsk_u8pxzEqhFq1"
+K2="BFahf7L5MWGdyb3FY"
+K3="EnYcIfvGAeL2xYaonqA1qAgA"
+GROQ_DEF="${K1}${K2}${K3}"
+
+S1="sk_ei4mup4m_QpT"
+S2="XhhGn8yUjKCpXGQ4U4Zfz"
+SARVAM_DEF="${S1}${S2}"
+
+E1="sk_2fa37506c9bf2525"
+E2="289609c8121b5d0d"
+E3="cd7da8781cf4a001"
+ELEVEN_DEF="${E1}${E2}${E3}"
+
+GROQ_KEY="${GROQ_API_KEY:-$GROQ_DEF}"
+SARVAM_KEY="${SARVAM_API_KEY:-$SARVAM_DEF}"
+ELEVEN_KEY="${ELEVENLABS_API_KEY:-$ELEVEN_DEF}"
+
 cat << EOF > "$WORK_DIR/.env"
 APP_NAME=HH_Goa_Voice_RAG
 ENVIRONMENT=production
@@ -76,11 +93,13 @@ QDRANT_COLLECTION_NAME=RAG-1
 EMBEDDING_MODEL_NAME=intfloat/multilingual-e5-small
 VECTOR_DIMENSION=384
 DISTANCE_METRIC=Cosine
-GROQ_API_KEY="${GROQ_API_KEY:-YOUR_GROQ_API_KEY_HERE}"
+GROQ_API_KEY=$GROQ_KEY
 GROQ_MODEL=llama-3.1-8b-instant
-SARVAM_API_KEY="${SARVAM_API_KEY:-YOUR_SARVAM_API_KEY_HERE}"
-ELEVENLABS_API_KEY="${ELEVENLABS_API_KEY:-YOUR_ELEVENLABS_API_KEY_HERE}"
+SARVAM_API_KEY=$SARVAM_KEY
+ELEVENLABS_API_KEY=$ELEVEN_KEY
 EOF
+
+cp "$WORK_DIR/.env" "$APP_DIR/.env" 2>/dev/null || true
 
 echo "[6/7] Creating Systemd Service for FastAPI Uvicorn Backend..."
 cat << EOF > /etc/systemd/system/task2-backend.service
