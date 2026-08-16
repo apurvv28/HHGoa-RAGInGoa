@@ -64,8 +64,8 @@ if [ "$ALB_SG_ID" == "None" ] || [ -z "$ALB_SG_ID" ]; then
         --vpc-id "$VPC_ID" \
         --query "GroupId" --output text)
 
-    aws ec2 authorize-security-group-ingress --group-id "$ALB_SG_ID" --protocol tcp --port 80 --cidr 0.0.0.0/0
-    aws ec2 authorize-security-group-ingress --group-id "$ALB_SG_ID" --protocol tcp --port 443 --cidr 0.0.0.0/0
+    aws ec2 authorize-security-group-ingress --group-id "$ALB_SG_ID" --protocol tcp --port 80 --cidr 0.0.0.0/0 > /dev/null
+    aws ec2 authorize-security-group-ingress --group-id "$ALB_SG_ID" --protocol tcp --port 443 --cidr 0.0.0.0/0 > /dev/null
     echo "   - Created ALB Security Group: $ALB_SG_ID"
 else
     echo "   - Existing ALB Security Group found: $ALB_SG_ID"
@@ -83,9 +83,9 @@ if [ "$EC2_SG_ID" == "None" ] || [ -z "$EC2_SG_ID" ]; then
         --query "GroupId" --output text)
 
     # Inbound Port 8000 from ALB Security Group
-    aws ec2 authorize-security-group-ingress --group-id "$EC2_SG_ID" --protocol tcp --port 8000 --source-group "$ALB_SG_ID"
+    aws ec2 authorize-security-group-ingress --group-id "$EC2_SG_ID" --protocol tcp --port 8000 --source-group "$ALB_SG_ID" > /dev/null
     # Inbound SSH Port 22 for administration
-    aws ec2 authorize-security-group-ingress --group-id "$EC2_SG_ID" --protocol tcp --port 22 --cidr 0.0.0.0/0
+    aws ec2 authorize-security-group-ingress --group-id "$EC2_SG_ID" --protocol tcp --port 22 --cidr 0.0.0.0/0 > /dev/null
     echo "   - Created EC2 Security Group: $EC2_SG_ID"
 else
     echo "   - Existing EC2 Security Group found: $EC2_SG_ID"
@@ -161,24 +161,37 @@ fi
 
 INSTANCE_IDS=()
 
-for i in $(seq 1 $NUM_INSTANCES); do
-    # Alternate subnets for multi-AZ resilience
-    SUBNET_INDEX=$(( (i - 1) % ${#SUBNETS[@]} ))
-    TARGET_SUBNET="${SUBNETS[$SUBNET_INDEX]}"
+# Check if instances are already launched/running to prevent duplicate creation
+EXISTING_INSTANCES=$(aws ec2 describe-instances \
+    --filters "Name=tag:Name,Values=${TAG_NAME}*" "Name=instance-state-name,Values=pending,running" \
+    --query "Reservations[*].Instances[*].InstanceId" --output text 2>/dev/null || true)
 
-    INSTANCE_ID=$(aws ec2 run-instances \
-        --image-id "$AMI_ID" \
-        --instance-type "$INSTANCE_TYPE" \
-        --security-group-ids "$EC2_SG_ID" \
-        --subnet-id "$TARGET_SUBNET" \
-        --associate-public-ip-address \
-        --user-data "file://$USER_DATA_FILE" \
-        --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=${TAG_NAME}-Server-${i}}]" \
-        --query "Instances[0].InstanceId" --output text)
+if [ -n "$EXISTING_INSTANCES" ] && [ "$EXISTING_INSTANCES" != "None" ]; then
+    echo "   - Found existing running instances: $EXISTING_INSTANCES"
+    INSTANCE_IDS=($EXISTING_INSTANCES)
+else
+    for i in $(seq 1 $NUM_INSTANCES); do
+        SUBNET_INDEX=$(( (i - 1) % ${#SUBNETS[@]} ))
+        TARGET_SUBNET="${SUBNETS[$SUBNET_INDEX]}"
 
-    echo "   - Server $i launched: $INSTANCE_ID (Subnet: $TARGET_SUBNET)"
-    INSTANCE_IDS+=("$INSTANCE_ID")
-done
+        INSTANCE_ID=$(aws ec2 run-instances \
+            --image-id "$AMI_ID" \
+            --instance-type "$INSTANCE_TYPE" \
+            --security-group-ids "$EC2_SG_ID" \
+            --subnet-id "$TARGET_SUBNET" \
+            --associate-public-ip-address \
+            --user-data "file://$USER_DATA_FILE" \
+            --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=${TAG_NAME}-Server-${i}}]" \
+            --query "Instances[0].InstanceId" --output text)
+
+        echo "   - Server $i launched: $INSTANCE_ID (Subnet: $TARGET_SUBNET)"
+        INSTANCE_IDS+=("$INSTANCE_ID")
+    done
+fi
+
+echo "   - Waiting for EC2 instances to enter 'running' state..."
+aws ec2 wait instance-running --instance-ids "${INSTANCE_IDS[@]}"
+echo "   - All EC2 instances are now running!"
 
 # 7. Register Instances into Target Group
 echo "[7/7] Registering 3 EC2 Instances into Target Group..."
