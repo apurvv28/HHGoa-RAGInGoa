@@ -26,21 +26,28 @@ INSTANCE_IDS=$(aws ec2 describe-instances \
     --filters "Name=tag:Name,Values=${TAG_NAME}*" "Name=instance-state-name,Values=pending,running,stopping,stopped" \
     --query "Reservations[*].Instances[*].InstanceId" --output text 2>/dev/null || true)
 
-if [ -n "$INSTANCE_IDS" ]; then
+if [ -n "$INSTANCE_IDS" ] && [ "$INSTANCE_IDS" != "None" ]; then
     echo "   - Terminating instances: $INSTANCE_IDS"
     aws ec2 terminate-instances --instance-ids $INSTANCE_IDS > /dev/null
     echo "   - Waiting for instances to terminate..."
-    aws ec2 wait instance-terminated --instance-ids $INSTANCE_IDS
+    aws ec2 wait instance-terminated --instance-ids $INSTANCE_IDS 2>/dev/null || sleep 15
     echo "   - EC2 instances terminated."
 else
     echo "   - No active EC2 instances found."
 fi
 
-# 2. Delete ALB
+# 2. Delete ALB Listeners & ALB
 echo "[2/4] Deleting Application Load Balancer ($ALB_NAME)..."
 ALB_ARN=$(aws elbv2 describe-load-balancers --names "$ALB_NAME" --query "LoadBalancers[0].LoadBalancerArn" --output text 2>/dev/null || true)
 
 if [ -n "$ALB_ARN" ] && [ "$ALB_ARN" != "None" ]; then
+    LISTENERS=$(aws elbv2 describe-listeners --load-balancer-arn "$ALB_ARN" --query "Listeners[*].ListenerArn" --output text 2>/dev/null || true)
+    for listener in $LISTENERS; do
+        if [ -n "$listener" ] && [ "$listener" != "None" ]; then
+            aws elbv2 delete-listener --listener-arn "$listener" 2>/dev/null || true
+        fi
+    done
+
     echo "   - Deleting ALB: $ALB_ARN"
     aws elbv2 delete-load-balancer --load-balancer-arn "$ALB_ARN"
     echo "   - Waiting for ALB deletion..."
@@ -50,21 +57,28 @@ else
     echo "   - No ALB found."
 fi
 
-# 3. Delete Target Group
+# 3. Delete Target Group with retry loop
 echo "[3/4] Deleting Target Group ($TARGET_GROUP_NAME)..."
 TG_ARN=$(aws elbv2 describe-target-groups --names "$TARGET_GROUP_NAME" --query "TargetGroups[0].TargetGroupArn" --output text 2>/dev/null || true)
 
 if [ -n "$TG_ARN" ] && [ "$TG_ARN" != "None" ]; then
     echo "   - Deleting Target Group: $TG_ARN"
-    aws elbv2 delete-target-group --target-group-arn "$TG_ARN"
-    echo "   - Target Group deleted."
+    for i in {1..6}; do
+        if aws elbv2 delete-target-group --target-group-arn "$TG_ARN" 2>/dev/null; then
+            echo "   - Target Group deleted successfully."
+            break
+        else
+            echo "   - Target Group still detaching, waiting 5 seconds... ($i/6)"
+            sleep 5
+        fi
+    done
 else
     echo "   - No Target Group found."
 fi
 
 # 4. Delete Security Groups
 echo "[4/4] Deleting Security Groups..."
-sleep 10
+sleep 5
 
 EC2_SG_ID=$(aws ec2 describe-security-groups --filters "Name=group-name,Values=$EC2_SG_NAME" --query "SecurityGroups[0].GroupId" --output text 2>/dev/null || true)
 if [ -n "$EC2_SG_ID" ] && [ "$EC2_SG_ID" != "None" ]; then

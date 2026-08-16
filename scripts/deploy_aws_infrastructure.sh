@@ -47,11 +47,7 @@ if [ ${#SUBNETS[@]} -lt 2 ]; then
     exit 1
 fi
 
-SUBNET_1="${SUBNETS[0]}"
-SUBNET_2="${SUBNETS[1]}"
-SUBNET_3="${SUBNETS[2]:-${SUBNETS[0]}}"
-
-echo "   - Subnets selected: $SUBNET_1, $SUBNET_2, $SUBNET_3"
+echo "   - All Subnets enabled for ALB Multi-AZ: ${SUBNETS[*]}"
 
 # 2. Create ALB Security Group (Public HTTP 80 & HTTPS 443)
 echo "[2/7] Provisioning ALB Security Group ($ALB_SG_NAME)..."
@@ -82,20 +78,16 @@ if [ "$EC2_SG_ID" == "None" ] || [ -z "$EC2_SG_ID" ]; then
         --vpc-id "$VPC_ID" \
         --query "GroupId" --output text)
 
-    # Inbound Port 8000 from ALB Security Group
     aws ec2 authorize-security-group-ingress --group-id "$EC2_SG_ID" --protocol tcp --port 8000 --source-group "$ALB_SG_ID" > /dev/null 2>&1 || true
-    # Inbound Port 8000 from 0.0.0.0/0 for health checks
     aws ec2 authorize-security-group-ingress --group-id "$EC2_SG_ID" --protocol tcp --port 8000 --cidr 0.0.0.0/0 > /dev/null 2>&1 || true
-    # Inbound SSH Port 22 for administration
     aws ec2 authorize-security-group-ingress --group-id "$EC2_SG_ID" --protocol tcp --port 22 --cidr 0.0.0.0/0 > /dev/null 2>&1 || true
     echo "   - Created EC2 Security Group: $EC2_SG_ID"
 else
     echo "   - Existing EC2 Security Group found: $EC2_SG_ID"
-    # Ensure Port 8000 ingress is authorized
     aws ec2 authorize-security-group-ingress --group-id "$EC2_SG_ID" --protocol tcp --port 8000 --cidr 0.0.0.0/0 > /dev/null 2>&1 || true
 fi
 
-# 4. Create Target Group (Port 8000, /health check with 200 matcher)
+# 4. Create Target Group (Port 8000, /health check with 200-399 matcher & 3min startup grace)
 echo "[4/7] Provisioning Target Group ($TARGET_GROUP_NAME)..."
 TG_ARN=$(aws elbv2 describe-target-groups --names "$TARGET_GROUP_NAME" --query "TargetGroups[0].TargetGroupArn" --output text 2>/dev/null || true)
 
@@ -107,33 +99,42 @@ if [ "$TG_ARN" == "None" ] || [ -z "$TG_ARN" ]; then
         --vpc-id "$VPC_ID" \
         --health-check-protocol HTTP \
         --health-check-path "$HEALTH_CHECK_PATH" \
-        --health-check-interval-seconds 15 \
-        --health-check-timeout-seconds 5 \
+        --health-check-interval-seconds 30 \
+        --health-check-timeout-seconds 10 \
         --healthy-threshold-count 2 \
-        --unhealthy-threshold-count 3 \
-        --matcher "HttpCode=200" \
+        --unhealthy-threshold-count 6 \
+        --matcher "HttpCode=200-399" \
         --target-type instance \
         --query "TargetGroups[0].TargetGroupArn" --output text)
     echo "   - Created Target Group ARN: $TG_ARN"
 else
     echo "   - Existing Target Group found: $TG_ARN"
+    # Ensure health check parameters are updated
+    aws elbv2 modify-target-group \
+        --target-group-arn "$TG_ARN" \
+        --health-check-protocol HTTP \
+        --health-check-path "$HEALTH_CHECK_PATH" \
+        --health-check-interval-seconds 30 \
+        --health-check-timeout-seconds 10 \
+        --healthy-threshold-count 2 \
+        --unhealthy-threshold-count 6 \
+        --matcher "HttpCode=200-399" > /dev/null
 fi
 
-# 5. Create Application Load Balancer & HTTP Listener
+# 5. Create Application Load Balancer across ALL Subnets
 echo "[5/7] Provisioning Application Load Balancer ($ALB_NAME)..."
 ALB_ARN=$(aws elbv2 describe-load-balancers --names "$ALB_NAME" --query "LoadBalancers[0].LoadBalancerArn" --output text 2>/dev/null || true)
 
 if [ "$ALB_ARN" == "None" ] || [ -z "$ALB_ARN" ]; then
     ALB_ARN=$(aws elbv2 create-load-balancer \
         --name "$ALB_NAME" \
-        --subnets "$SUBNET_1" "$SUBNET_2" \
+        --subnets "${SUBNETS[@]}" \
         --security-groups "$ALB_SG_ID" \
         --scheme internet-facing \
         --type application \
         --query "LoadBalancers[0].LoadBalancerArn" --output text)
     echo "   - Created ALB ARN: $ALB_ARN"
 
-    # Create HTTP Listener (Port 80 -> Target Group)
     aws elbv2 create-listener \
         --load-balancer-arn "$ALB_ARN" \
         --protocol HTTP \
@@ -146,7 +147,7 @@ fi
 
 ALB_DNS=$(aws elbv2 describe-load-balancers --load-balancer-arns "$ALB_ARN" --query "LoadBalancers[0].DNSName" --output text)
 
-# 6. Query Amazon Linux 2023 AMI & Launch 3x EC2 t3.micro Instances
+# 6. Launch 3x EC2 t3.micro Instances
 echo "[6/7] Launching 3x $INSTANCE_TYPE EC2 Instances across Availability Zones..."
 AMI_ID=$(aws ec2 describe-images \
     --owners amazon \
