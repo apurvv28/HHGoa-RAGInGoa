@@ -77,7 +77,7 @@ ALB_SG_ID=$(aws ec2 describe-security-groups \
 if [ "$ALB_SG_ID" = "None" ] || [ -z "$ALB_SG_ID" ]; then
     ALB_SG_ID=$(aws ec2 create-security-group \
         --group-name "$ALB_SG_NAME" \
-        --description "ALB SG — HH Goa Task 2" \
+        --description "ALB SG - HH Goa Task 2" \
         --vpc-id "$VPC_ID" \
         --query "GroupId" --output text)
     aws ec2 authorize-security-group-ingress --group-id "$ALB_SG_ID" \
@@ -98,7 +98,7 @@ EC2_SG_ID=$(aws ec2 describe-security-groups \
 if [ "$EC2_SG_ID" = "None" ] || [ -z "$EC2_SG_ID" ]; then
     EC2_SG_ID=$(aws ec2 create-security-group \
         --group-name "$EC2_SG_NAME" \
-        --description "EC2 SG — HH Goa Task 2" \
+        --description "EC2 SG - HH Goa Task 2" \
         --vpc-id "$VPC_ID" \
         --query "GroupId" --output text)
     # Allow port 8000 from ALB SG
