@@ -62,7 +62,7 @@ export default function VoiceRAGPage() {
     setLoading(true);
     setQueryText(''); // clear input immediately so placeholder shows
     try {
-      const res = await fetch(`${BACKEND_URL}/api/v1/query`, {
+      const res = await fetch(`/api/proxy/query`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -130,7 +130,7 @@ export default function VoiceRAGPage() {
       formData.append('language', language);
       formData.append('synthesize_voice', 'true');
 
-      const res = await fetch(`${BACKEND_URL}/api/v1/voice/query`, {
+      const res = await fetch(`/api/proxy/voice/query`, {
         method: 'POST',
         body: formData
       });
