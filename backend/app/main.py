@@ -3,6 +3,7 @@ FastAPI Main Application Entrypoint.
 HH Goa 2026 — Voice-Enabled RAG System (Team TechTadkaa).
 """
 
+import asyncio
 import time
 import logging
 from contextlib import asynccontextmanager
