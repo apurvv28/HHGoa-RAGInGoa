@@ -1,74 +1,109 @@
 #!/bin/bash
 # ==============================================================================
 # AWS EC2 User Data Startup Script — Task-2 Backend Server
-# Target Instance: t3.micro (Amazon Linux 2023 / Ubuntu 22.04)
-# Allocates 2GB Swap Memory, installs CPU PyTorch, FastAPI & Uvicorn Systemd
+# FIXED: Uses lightweight requirements, pre-downloads model, non-blocking startup
 # ==============================================================================
 
 set -e
 exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/null) 2>&1
 
-echo "[1/7] Allocating 2GB Swap Memory to prevent t3.micro 1GB OOM..."
+echo "============================================================"
+echo "[BOOT] HH Goa Task-2 EC2 Bootstrap Starting..."
+echo "============================================================"
+
+# ── Step 1: Swap Memory (prevent OOM on t3.micro 1GB RAM) ──────
+echo "[1/8] Creating 2GB Swap..."
 if [ ! -f /swapfile ]; then
     fallocate -l 2G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=2048
     chmod 600 /swapfile
     mkswap /swapfile
     swapon /swapfile
     echo '/swapfile swap swap defaults 0 0' >> /etc/fstab
-    echo "   - Swap space created successfully."
 fi
+free -h
 
-echo "[2/7] Installing OS system dependencies..."
+# ── Step 2: Install system packages ─────────────────────────────
+echo "[2/8] Installing system packages..."
 if command -v dnf &> /dev/null; then
-    dnf update -y
-    dnf install -y python3.11 python3.11-pip git gcc python3.11-devel
+    dnf install -y python3.11 python3.11-pip git gcc python3.11-devel 2>/dev/null || \
+    dnf install -y python3 python3-pip git gcc python3-devel
 elif command -v apt-get &> /dev/null; then
     apt-get update -y
     apt-get install -y python3.11 python3.11-venv python3.11-dev git build-essential
 else
-    yum install -y python3 git gcc python3-devel
+    yum install -y python3 python3-pip git gcc python3-devel
 fi
 
-echo "[3/7] Preparing Application Directory..."
+# ── Step 3: Clone repository ─────────────────────────────────────
+echo "[3/8] Cloning repository..."
 APP_DIR="/opt/hh-goa-rag"
-mkdir -p "$APP_DIR"
-cd "$APP_DIR"
 
-if [ ! -f "$APP_DIR/requirements.txt" ]; then
-    echo "Cloning repository directly into $APP_DIR..."
-    git clone https://github.com/apurvv28/HHGoa-RAGInGoa.git "$APP_DIR" || true
+# Always fresh clone — remove stale directory if present
+if [ -d "$APP_DIR/.git" ]; then
+    echo "   Repo exists, pulling latest..."
+    cd "$APP_DIR"
+    git pull origin main || true
+else
+    rm -rf "$APP_DIR"
+    mkdir -p "$APP_DIR"
+    git clone https://github.com/apurvv28/HHGoa-RAGInGoa.git "$APP_DIR"
 fi
 
+# Detect working directory (root if Task-2 was pushed as root)
 WORK_DIR="$APP_DIR"
 if [ -d "$APP_DIR/Task-2" ]; then
     WORK_DIR="$APP_DIR/Task-2"
 elif [ -d "$APP_DIR/task-2" ]; then
     WORK_DIR="$APP_DIR/task-2"
 fi
+echo "   Working directory: $WORK_DIR"
+ls "$WORK_DIR"
 
-echo "   - Using Working Directory: $WORK_DIR"
-
-echo "[4/7] Setting up Python Virtual Environment..."
-python3.11 -m venv "$APP_DIR/.venv" || python3 -m venv "$APP_DIR/.venv"
+# ── Step 4: Python Virtual Environment ──────────────────────────
+echo "[4/8] Setting up Python virtualenv..."
+PYTHON_BIN=$(command -v python3.11 || command -v python3)
+$PYTHON_BIN -m venv "$APP_DIR/.venv"
 source "$APP_DIR/.venv/bin/activate"
+pip install --upgrade pip setuptools wheel --quiet
 
-pip install --upgrade pip setuptools wheel
+# ── Step 5: Install CPU-only lightweight requirements ───────────
+echo "[5/8] Installing Python dependencies (CPU-only torch)..."
 
-# Install CPU PyTorch first to save memory & bandwidth
-pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu || true
+# Install CPU-only torch FIRST before anything else to prevent OOM
+pip install --no-cache-dir \
+    torch==2.2.0 \
+    --index-url https://download.pytorch.org/whl/cpu \
+    --quiet
 
-if [ -f "$WORK_DIR/requirements.txt" ]; then
-    pip install --no-cache-dir -r "$WORK_DIR/requirements.txt"
-elif [ -f "$APP_DIR/requirements.txt" ]; then
-    pip install --no-cache-dir -r "$APP_DIR/requirements.txt"
-else
-    pip install --no-cache-dir fastapi uvicorn pydantic pydantic-settings httpx sentence-transformers qdrant-client sarvamai
-fi
+# Install remaining lightweight packages (skip torch from requirements.txt)
+pip install --no-cache-dir \
+    fastapi \
+    "uvicorn[standard]" \
+    pydantic \
+    pydantic-settings \
+    python-multipart \
+    qdrant-client \
+    sentence-transformers \
+    httpx \
+    python-dotenv \
+    numpy \
+    sarvamai \
+    --quiet
 
-echo "Pre-downloading HuggingFace Indic embedding model weights..."
-python3 -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('intfloat/multilingual-e5-small')" || true
+echo "   Dependencies installed successfully."
 
-echo "[5/7] Writing Production .env Environment File..."
+# ── Step 6: Pre-download HuggingFace model weights ──────────────
+echo "[6/8] Pre-downloading multilingual-e5-small model weights..."
+python3 -c "
+from sentence_transformers import SentenceTransformer
+print('Downloading multilingual-e5-small...')
+model = SentenceTransformer('intfloat/multilingual-e5-small')
+vec = model.encode('health check warmup')
+print(f'Model loaded OK. Vector dim: {len(vec)}')
+" || echo "WARNING: Model pre-download failed — will retry at service start."
+
+# ── Step 7: Write production .env file ──────────────────────────
+echo "[7/8] Writing .env file..."
 K1="gsk_u8pxzEqhFq1"
 K2="BFahf7L5MWGdyb3FY"
 K3="EnYcIfvGAeL2xYaonqA1qAgA"
@@ -83,10 +118,6 @@ E2="289609c8121b5d0d"
 E3="cd7da8781cf4a001"
 ELEVEN_DEF="${E1}${E2}${E3}"
 
-GROQ_KEY="${GROQ_API_KEY:-$GROQ_DEF}"
-SARVAM_KEY="${SARVAM_API_KEY:-$SARVAM_DEF}"
-ELEVEN_KEY="${ELEVENLABS_API_KEY:-$ELEVEN_DEF}"
-
 cat << EOF > "$WORK_DIR/.env"
 APP_NAME=HH_Goa_Voice_RAG
 ENVIRONMENT=production
@@ -96,40 +127,60 @@ QDRANT_COLLECTION_NAME=RAG-1
 EMBEDDING_MODEL_NAME=intfloat/multilingual-e5-small
 VECTOR_DIMENSION=384
 DISTANCE_METRIC=Cosine
-GROQ_API_KEY=$GROQ_KEY
+GROQ_API_KEY=${GROQ_API_KEY:-$GROQ_DEF}
 GROQ_MODEL=llama-3.1-8b-instant
-SARVAM_API_KEY=$SARVAM_KEY
-ELEVENLABS_API_KEY=$ELEVEN_KEY
+SARVAM_API_KEY=${SARVAM_API_KEY:-$SARVAM_DEF}
+ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY:-$ELEVEN_DEF}
 EOF
 
+# Make .env available at APP_DIR root as well
 cp "$WORK_DIR/.env" "$APP_DIR/.env" 2>/dev/null || true
+echo "   .env written. Contents:"
+cat "$WORK_DIR/.env" | grep -v API_KEY | grep -v SECRET
 
-echo "[6/7] Creating Systemd Service for FastAPI Uvicorn Backend..."
+# ── Step 8: Create & start systemd service ───────────────────────
+echo "[8/8] Creating systemd service..."
+
 cat << EOF > /etc/systemd/system/task2-backend.service
 [Unit]
-Description=HH Goa Task-2 Voice RAG Backend Service
-After=network.target
+Description=HH Goa Task-2 Voice RAG Backend (Uvicorn)
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
 User=root
 WorkingDirectory=$WORK_DIR
-ExecStart=$APP_DIR/.venv/bin/uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --workers 2
-Restart=always
-RestartSec=3
+ExecStart=$APP_DIR/.venv/bin/uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --workers 1 --log-level info
+Restart=on-failure
+RestartSec=5
 Environment=PYTHONUNBUFFERED=1
 Environment=PYTHONPATH=$WORK_DIR
+EnvironmentFile=$WORK_DIR/.env
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-echo "[7/7] Enabling and starting task2-backend service..."
 systemctl daemon-reload
 systemctl enable task2-backend
-systemctl restart task2-backend || true
+systemctl start task2-backend
 
-sleep 5
-curl -s http://localhost:8000/health || echo "Health check warming up..."
+# Wait up to 30s for Uvicorn to be ready
+echo "Waiting for Uvicorn to start..."
+for i in $(seq 1 12); do
+    if curl -s --max-time 3 http://localhost:8000/health > /dev/null 2>&1; then
+        echo "✅ HEALTH CHECK PASSED — Service is UP and healthy!"
+        break
+    fi
+    echo "   Attempt $i/12: waiting 5 seconds..."
+    sleep 5
+done
 
-echo "EC2 User Data script executed successfully!"
+echo ""
+echo "============================================================"
+echo "✅ Bootstrap complete! Service status:"
+systemctl status task2-backend --no-pager -l || true
+echo ""
+echo "Test: $(curl -s http://localhost:8000/health || echo 'Warming up...')"
+echo "============================================================"
